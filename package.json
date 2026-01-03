@@ -2,6 +2,8 @@
   "name": "magnus-flipper-scraper",
   "version": "1.0.0",
   "description": "Scraper Dashboard with Tests",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
   "type": "module",
   "scripts": {
     "start": "vite",
