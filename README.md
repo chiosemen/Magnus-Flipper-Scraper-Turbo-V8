@@ -8,6 +8,15 @@ This contains everything you need to run your app locally.
 
 View your app in AI Studio: https://ai.studio/apps/drive/15yEs1C09qgHemGGTipLUkRoI2gGF_bN3
 
+## Mixtape Scope
+
+Production targets for the Mixtape release:
+- `apps/web` (dashboard)
+- `apps/api` (API + orchestration)
+- `apps/worker` (job execution)
+
+The root SPA (repo root `App.tsx`, `pages/`, `components/`, `services/`) is legacy and out-of-scope for Mixtape shipping. Root SPA build/runtime errors are non-blocking for Mixtape deploys.
+
 ## Run Locally
 
 **Prerequisites:**  Node.js
