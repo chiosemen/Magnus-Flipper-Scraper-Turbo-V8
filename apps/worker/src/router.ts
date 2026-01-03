@@ -33,9 +33,20 @@ export class JobRouter {
     
     try {
       let result;
+      let criteria = params.criteria as any;
 
-      if (type === 'monitor_search' && params.criteria) {
-        result = await scraper.search(params.criteria as any, { 
+      if (!criteria && typeof params.searchQuery === 'string') {
+        const keywords = params.searchQuery
+          .split(/[,\n]+/)
+          .map((value) => value.trim())
+          .filter(Boolean);
+        if (keywords.length > 0) {
+          criteria = { keywords };
+        }
+      }
+
+      if (type === 'monitor_search' && criteria) {
+        result = await scraper.search(criteria, { 
             jobId, 
             userId: meta.userId 
         });
