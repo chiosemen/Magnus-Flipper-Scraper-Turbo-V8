@@ -26,7 +26,13 @@ export const dealsService = {
       // conditions.push(inArray(schema.deals.source, filters.sources));
     }
 
-    const sortCol = schema.deals[filters.sortBy || 'createdAt'];
+    const sortKey = filters.sortBy || 'date';
+    const sortCol =
+      sortKey === 'date' ? schema.deals.createdAt :
+      sortKey === 'price' ? schema.deals.listPrice :
+      sortKey === 'profit' ? schema.deals.profitAmount :
+      sortKey === 'score' ? schema.deals.dealScore :
+      schema.deals.createdAt;
     const sortDir = filters.sortOrder === 'asc' ? asc : desc;
 
     const limit = filters.limit || 20;

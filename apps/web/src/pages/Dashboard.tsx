@@ -24,6 +24,11 @@ export const Dashboard = () => {
     queryFn: api.analytics.dashboard,
   });
 
+  const { data: dealsData } = useQuery({
+    queryKey: ['deals', 'latest'],
+    queryFn: () => api.deals.list({ page: 1, limit: 5, sortBy: 'date', sortOrder: 'desc' }),
+  });
+
   const handleUpgrade = async () => {
     try {
       const result = await api.stripe.checkout('pro');
@@ -46,11 +51,37 @@ export const Dashboard = () => {
     }
   };
 
+  const handleDemoScrape = async () => {
+    try {
+      await api.monitors.create({
+        name: 'Demo Craigslist Search',
+        sources: ['craigslist'],
+        criteria: { keywords: ['bike'] },
+        frequency: 'hourly',
+        status: 'active',
+        notifyEmail: false,
+        notifyPush: true,
+        notifyInApp: true,
+      });
+    } catch (error) {
+      console.error('Failed to start demo scrape', error);
+    }
+  };
+
+  const latestDeals = dealsData?.items || [];
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-white">Welcome back, {user?.displayName}</h1>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleDemoScrape}
+            className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold"
+          >
+            Run Demo Scrape
+          </button>
           <button
             type="button"
             onClick={handleBillingPortal}
@@ -103,10 +134,22 @@ export const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-white mb-4">Recent Activity</h3>
-          <div className="text-slate-500 text-center py-8">
-            Chart component placeholder (Recharts)
-          </div>
+          <h3 className="text-lg font-bold text-white mb-4">Latest Deals</h3>
+          {latestDeals.length === 0 ? (
+            <div className="text-slate-500 text-center py-8">No deals yet</div>
+          ) : (
+            <div className="space-y-3">
+              {latestDeals.map((deal: any) => (
+                <div key={deal.id} className="p-3 bg-slate-800/50 rounded border border-slate-700/50 flex items-center justify-between">
+                  <div className="min-w-0">
+                    <div className="text-slate-200 text-sm truncate">{deal.title}</div>
+                    <div className="text-xs text-slate-500 capitalize">{deal.source}</div>
+                  </div>
+                  <div className="text-sm text-emerald-400 font-semibold">${deal.listPrice}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">

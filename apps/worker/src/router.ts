@@ -147,7 +147,8 @@ export class JobRouter {
       if (type === 'monitor_search' && criteria) {
         result = await scraper.search(criteria, { 
             jobId, 
-            userId: meta.userId 
+            userId: meta.userId,
+            monitorId: params.monitorId
         });
       } else if (type === 'single_url' && params.urls) {
         // Not implemented in base yet, utilizing search as placeholder or generic

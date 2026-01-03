@@ -17,6 +17,7 @@ export interface ScrapeOptions {
   timeout?: number;
   jobId: string;
   userId: string;
+  monitorId?: string;
 }
 
 export abstract class BaseScraper {
@@ -58,6 +59,9 @@ export abstract class BaseScraper {
          deal.scrapedAt = new Date();
          deal.lastSeenAt = new Date();
          deal.userId = options.userId;
+         if (options.monitorId) {
+           deal.monitorId = options.monitorId;
+         }
          
          await this.storageService.saveDeal(deal, options.jobId, options.userId);
          dealsFound.push(deal);
