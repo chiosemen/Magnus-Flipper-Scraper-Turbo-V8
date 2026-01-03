@@ -39,6 +39,11 @@ app.post('/v1/process', async (c) => {
 
     return c.json({ success: true, jobId: payload.jobId });
   } catch (error) {
+    const errorCode = (error as any)?.code;
+    if (errorCode) {
+      logger.warn('Worker rejected job', { code: errorCode, message: (error as Error).message });
+      return c.json({ error: (error as Error).message, code: errorCode }, 200);
+    }
     logger.error('Worker Error', error as Error);
     return c.json({ error: (error as Error).message }, 500);
   }

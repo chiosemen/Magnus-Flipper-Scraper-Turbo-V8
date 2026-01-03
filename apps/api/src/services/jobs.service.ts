@@ -1,9 +1,11 @@
 import { db, schema } from '../lib/db';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { Job, CreateJob, JobPayload, JobTypeEnum } from '@repo/types';
-import { NotFoundError } from '../utils/errors';
+import { AppError, NotFoundError } from '../utils/errors';
 import { createScrapeTask } from '../lib/cloudTasks';
 import { updateJobStatus } from '../lib/firestore';
+import { policyService } from './policy';
+import { getTierLimits, TIER_ERROR_CODES } from './tierLimits';
 
 export const jobsService = {
   async listJobs(userId: string) {
@@ -24,6 +26,43 @@ export const jobsService = {
   },
 
   async createJob(userId: string, data: CreateJob) {
+    const tier = await policyService.getUserTier(userId);
+    const limits = getTierLimits(tier);
+
+    const runningJobs = await db.execute(sql`
+      SELECT count(*) as count FROM ${schema.jobs}
+      WHERE user_id = ${userId} AND status = 'running'
+    `);
+    const runningCount = Number(runningJobs[0]?.count || 0);
+    if (runningCount >= limits.maxConcurrency) {
+      throw new AppError(
+        'Concurrency limit reached for tier',
+        429,
+        TIER_ERROR_CODES.CONCURRENCY_LIMIT,
+        { tier, limit: limits.maxConcurrency }
+      );
+    }
+
+    if (data.monitorId) {
+      const monitor = await db.query.monitors.findFirst({
+        where: and(eq(schema.monitors.id, data.monitorId), eq(schema.monitors.userId, userId))
+      });
+      if (!monitor) throw new NotFoundError('Monitor not found');
+
+      if (monitor.lastRunAt) {
+        const lastRunAtMs = new Date(monitor.lastRunAt).getTime();
+        const elapsedSec = (Date.now() - lastRunAtMs) / 1000;
+        if (elapsedSec < limits.minIntervalSec) {
+          throw new AppError(
+            'Refresh interval floor not met for tier',
+            429,
+            TIER_ERROR_CODES.REFRESH_INTERVAL,
+            { tier, minIntervalSec: limits.minIntervalSec, lastRunAt: monitor.lastRunAt }
+          );
+        }
+      }
+    }
+
     // 1. Persist Job Record
     const [job] = await db.insert(schema.jobs).values({
       ...data,

@@ -1,8 +1,10 @@
 import { db, schema } from '../lib/db';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { Monitor, CreateMonitor, UpdateMonitor } from '@repo/types';
-import { NotFoundError, QuotaExceededError } from '../utils/errors';
+import { AppError, NotFoundError } from '../utils/errors';
 import { jobsService } from './jobs.service';
+import { policyService } from './policy';
+import { getTierLimits, TIER_ERROR_CODES } from './tierLimits';
 
 export const monitorsService = {
   async listMonitors(userId: string) {
@@ -23,10 +25,20 @@ export const monitorsService = {
 
   async createMonitor(userId: string, data: CreateMonitor) {
     // Check Quota
-    const user = await db.query.users.findFirst({ where: eq(schema.users.id, userId) });
-    // Simplified quota check (expand based on TierPolicy later)
-    if (user && user.monitorsUsed >= 10 && user.tier === 'free') {
-        throw new QuotaExceededError('Monitor limit reached for Free tier');
+    const tier = await policyService.getUserTier(userId);
+    const limits = getTierLimits(tier);
+    const monitorCount = await db.execute(sql`
+      SELECT count(*) as count FROM ${schema.monitors}
+      WHERE user_id = ${userId}
+    `);
+    const totalMonitors = Number(monitorCount[0]?.count || 0);
+    if (totalMonitors >= limits.maxMonitors) {
+      throw new AppError(
+        'Monitor limit reached for tier',
+        429,
+        TIER_ERROR_CODES.MONITOR_LIMIT,
+        { tier, limit: limits.maxMonitors }
+      );
     }
 
     const [monitor] = await db.insert(schema.monitors)
