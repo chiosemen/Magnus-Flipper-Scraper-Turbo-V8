@@ -6,6 +6,7 @@ import monitorRoutes from './monitors.routes';
 import jobRoutes from './jobs.routes';
 import analyticsRoutes from './analytics.routes';
 import userRoutes from './users.routes';
+import stripeRoutes from './stripe.routes';
 
 const app = new Hono();
 
@@ -16,5 +17,6 @@ app.route('/monitors', monitorRoutes);
 app.route('/jobs', jobRoutes);
 app.route('/analytics', analyticsRoutes);
 app.route('/users', userRoutes);
+app.route('/stripe', stripeRoutes);
 
 export default app;
