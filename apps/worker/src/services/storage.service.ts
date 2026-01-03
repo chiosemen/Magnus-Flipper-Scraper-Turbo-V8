@@ -9,6 +9,7 @@ export class StorageService {
       // Check duplicate by source + sourceId
       const existing = await db.query.deals.findFirst({
         where: and(
+          eq(schema.deals.userId, userId),
           eq(schema.deals.source, deal.source),
           eq(schema.deals.sourceId, deal.sourceId)
         )

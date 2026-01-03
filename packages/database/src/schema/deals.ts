@@ -51,5 +51,5 @@ export const deals = pgTable('deals', {
   dealScoreIdx: index('deals_score_idx').on(table.dealScore),
   createdAtIdx: index('deals_created_at_idx').on(table.createdAt),
   priceIdx: index('deals_price_idx').on(table.listPrice),
-  uniqueSourceItem: unique('deals_source_item_unique').on(table.source, table.sourceId),
+  uniqueSourceItem: unique('deals_user_source_item_unique').on(table.userId, table.source, table.sourceId),
 }));
