@@ -75,5 +75,6 @@ export const api = {
   stripe: {
     checkout: (tier: 'basic' | 'pro' | 'elite' | 'enterprise') =>
       request<{ url: string }>('/stripe/checkout', { method: 'POST', body: JSON.stringify({ tier }) }),
+    portal: () => request<{ url: string }>('/stripe/portal'),
   },
 };

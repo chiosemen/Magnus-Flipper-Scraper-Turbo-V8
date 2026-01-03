@@ -75,14 +75,9 @@ const upsertSubscription = async (payload: {
     });
 };
 
-const updateUserTierFromPriceId = async (userId: string, stripePriceId: string) => {
-  const tier = policyService.getTierForStripePriceId(stripePriceId);
-  if (!tier) {
-    logger.warn('Stripe price ID not mapped to tier', { stripePriceId });
-    return;
-  }
+const updateUserSubscriptionStatus = async (userId: string, status: StripeStatus) => {
   await db.update(schema.users)
-    .set({ tier, updatedAt: new Date() })
+    .set({ stripeSubscriptionStatus: status, updatedAt: new Date() })
     .where(eq(schema.users.id, userId));
 };
 
@@ -233,7 +228,7 @@ app.post('/webhook', async (c) => {
         currentPeriodEnd,
       });
 
-      await updateUserTierFromPriceId(userId, priceId);
+      await updateUserSubscriptionStatus(userId, normalizeStatus(subscription.status));
       break;
     }
     default:

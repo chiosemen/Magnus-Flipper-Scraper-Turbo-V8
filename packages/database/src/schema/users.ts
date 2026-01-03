@@ -9,6 +9,7 @@ export const users = pgTable('users', {
   tier: varchar('tier', { length: 32 }).default('free').notNull(),
   tierExpiresAt: timestamp('tier_expires_at'),
   stripeCustomerId: varchar('stripe_customer_id', { length: 128 }),
+  stripeSubscriptionStatus: varchar('stripe_subscription_status', { length: 32 }),
   
   settings: jsonb('settings').default({}),
   
