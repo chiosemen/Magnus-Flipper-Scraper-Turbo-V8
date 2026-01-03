@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Magnus Flipper AI - Scraper Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              space: ['Space Grotesk', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            animation: {
+              'blob': 'blob 7s infinite',
+              'fade-in': 'fadeIn 0.2s ease-in-out',
+              'marquee': 'marquee 40s linear infinite',
+            },
+            keyframes: {
+              blob: {
+                '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                '100%': { transform: 'translate(0px, 0px) scale(1)' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              marquee: {
+                '0%': { transform: 'translateX(0)' },
+                '100%': { transform: 'translateX(-50%)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Custom Scrollbar for Terminal */
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+      .terminal-scroll::-webkit-scrollbar {
+        width: 8px;
+      }
+      .terminal-scroll::-webkit-scrollbar-track {
+        background: #1e293b; 
+      }
+      .terminal-scroll::-webkit-scrollbar-thumb {
+        background: #475569; 
+        border-radius: 4px;
+      }
+      .terminal-scroll::-webkit-scrollbar-thumb:hover {
+        background: #64748b; 
+      }
+      
+      /* Marketplace Marquee Styles */
+      .marquee-container {
+        width: 100%;
+        overflow: hidden;
+        mask-image: linear-gradient(
+          to right,
+          transparent,
+          black 10%,
+          black 90%,
+          transparent
+        );
+      }
+
+      .marquee-track {
+        display: flex;
+        gap: 2.5rem;
+        width: max-content;
+        animation: marquee 40s linear infinite;
+      }
+
+      .marquee-track:hover {
+        animation-play-state: paused;
+      }
+
+      .marquee-item {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+      }
+
+      .marquee-item-primary {
+        background: rgba(34, 197, 94, 0.05);
+        border: 1px solid rgba(34, 197, 94, 0.1);
+      }
+
+      .marquee-item-primary:hover {
+        background: rgba(34, 197, 94, 0.1);
+        border-color: rgba(34, 197, 94, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .marquee-item-secondary {
+        background: transparent;
+        border: 1px solid transparent;
+        opacity: 0.7;
+      }
+
+      .marquee-item-secondary:hover {
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .glass-card {
+        background-color: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(30, 41, 59, 1);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "recharts": "https://esm.sh/recharts@^3.6.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@testing-library/jest-dom": "https://esm.sh/@testing-library/jest-dom@^6.9.1",
+    "vitest": "https://esm.sh/vitest@^4.0.16",
+    "vitest/": "https://esm.sh/vitest@^4.0.16/",
+    "@testing-library/react": "https://esm.sh/@testing-library/react@^16.3.1",
+    "path": "https://esm.sh/path@^0.12.7",
+    "url": "https://esm.sh/url@^0.11.4",
+    "@playwright/test": "https://esm.sh/@playwright/test@^1.57.0",
+    "k6": "https://esm.sh/k6@^0.0.0",
+    "k6/": "https://esm.sh/k6@^0.0.0/",
+    "buffer": "https://esm.sh/buffer@^6.0.3",
+    "zod": "https://esm.sh/zod@^4.3.4",
+    "drizzle-orm/": "https://esm.sh/drizzle-orm@^0.45.1/",
+    "uuid": "https://esm.sh/uuid@^13.0.0",
+    "drizzle-kit": "https://esm.sh/drizzle-kit@^0.31.8",
+    "postgres": "https://esm.sh/postgres@^3.4.7",
+    "drizzle-orm": "https://esm.sh/drizzle-orm@^0.45.1",
+    "firebase-admin/": "https://esm.sh/firebase-admin@^13.6.0/",
+    "hono/": "https://esm.sh/hono@^4.11.3/",
+    "hono": "https://esm.sh/hono@^4.11.3",
+    "ioredis": "https://esm.sh/ioredis@^5.8.2",
+    "crypto": "https://esm.sh/crypto@^1.0.1",
+    "@hono/zod-validator": "https://esm.sh/@hono/zod-validator@^0.7.6",
+    "@hono/node-server": "https://esm.sh/@hono/node-server@^1.19.7",
+    "@google-cloud/tasks": "https://esm.sh/@google-cloud/tasks@^6.2.1",
+    "playwright": "https://esm.sh/playwright@^1.57.0",
+    "fingerprint-generator": "https://esm.sh/fingerprint-generator@^2.1.79",
+    "fingerprint-injector": "https://esm.sh/fingerprint-injector@^2.1.79",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
+    "firebase/": "https://esm.sh/firebase@^12.7.0/",
+    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@^5.90.16",
+    "zustand": "https://esm.sh/zustand@^5.0.9",
+    "tailwindcss": "https://esm.sh/tailwindcss@^4.1.18",
+    "framer-motion": "https://esm.sh/framer-motion@^12.23.26",
+    "next/": "https://esm.sh/next@^16.1.1/",
+    "next": "https://esm.sh/next@^16.1.1",
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-950 text-slate-100 antialiased font-sans">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

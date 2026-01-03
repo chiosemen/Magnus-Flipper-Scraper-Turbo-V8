@@ -1,0 +1,33 @@
+{
+  "name": "@repo/worker",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.4.0",
+    "@hono/node-server": "^1.11.0",
+    "playwright": "^1.44.0",
+    "crawlee": "^3.9.2",
+    "fingerprint-generator": "^2.1.43",
+    "fingerprint-injector": "^2.1.43",
+    "firebase-admin": "^12.1.0",
+    "drizzle-orm": "^0.30.10",
+    "postgres": "^3.4.4",
+    "ioredis": "^5.4.1",
+    "zod": "^3.23.8",
+    "axios": "^1.6.8",
+    "cheerio": "^1.0.0-rc.12",
+    "@repo/types": "workspace:*",
+    "@repo/database": "workspace:*",
+    "@repo/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.12"
+  }
+}

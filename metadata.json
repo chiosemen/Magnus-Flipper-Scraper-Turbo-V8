@@ -1,0 +1,5 @@
+{
+  "name": "Magnus Flipper Scraper",
+  "description": "A production-ready frontend dashboard for the Magnus Flipper AI web scraper, featuring real-time log simulation, data visualization, and persistent caching.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@repo/logger",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

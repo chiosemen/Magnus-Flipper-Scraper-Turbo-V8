@@ -1,0 +1,42 @@
+{
+  "name": "magnus-flipper-scraper",
+  "version": "1.0.0",
+  "description": "Scraper Dashboard with Tests",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "test:load:peak": "k6 run load/scenarios/peak.js",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e"
+  },
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "lucide-react": "^0.562.0",
+    "recharts": "^3.6.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^14.2.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "jsdom": "^24.0.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4",
+    "vitest": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "@vitest/ui": "^1.6.0",
+    "supertest": "^7.0.0",
+    "@types/supertest": "^6.0.2",
+    "@faker-js/faker": "^8.4.1",
+    "msw": "^2.3.0",
+    "pg-mem": "^2.8.1",
+    "@playwright/test": "^1.44.0"
+  }
+}
