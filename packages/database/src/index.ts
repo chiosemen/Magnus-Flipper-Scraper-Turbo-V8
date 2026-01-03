@@ -7,6 +7,7 @@ import * as jobsSchema from './schema/jobs';
 import * as pricesSchema from './schema/prices';
 import * as alertsSchema from './schema/alerts';
 import * as analyticsSchema from './schema/analytics';
+import * as subscriptionsSchema from './schema/subscriptions';
 
 const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/magnus_flipper';
 
@@ -20,7 +21,8 @@ export const db = drizzle(client, {
     ...jobsSchema,
     ...pricesSchema,
     ...alertsSchema,
-    ...analyticsSchema
+    ...analyticsSchema,
+    ...subscriptionsSchema
   } 
 });
 
@@ -31,3 +33,4 @@ export * from './schema/jobs';
 export * from './schema/prices';
 export * from './schema/alerts';
 export * from './schema/analytics';
+export * from './schema/subscriptions';
