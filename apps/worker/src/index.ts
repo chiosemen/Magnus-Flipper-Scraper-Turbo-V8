@@ -11,6 +11,12 @@ app.get('/health', (c) => c.json({ status: 'ok', worker: 'active' }));
 
 app.post('/v1/process', async (c) => {
   try {
+    const workerToken = c.req.header('x-worker-token');
+    const sharedSecret = process.env.WORKER_SHARED_SECRET;
+    if (!sharedSecret || !workerToken || workerToken !== sharedSecret) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
     const body = await c.req.json();
     
     // Parse Payload

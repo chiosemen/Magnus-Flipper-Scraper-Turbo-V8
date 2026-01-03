@@ -31,6 +31,7 @@ export const createScrapeTask = async (payload: JobPayload) => {
           url: `${workerUrl}/v1/process`,
           headers: {
             'Content-Type': 'application/json',
+            'X-Worker-Token': process.env.WORKER_SHARED_SECRET || '',
           },
           body: Buffer.from(JSON.stringify(payload)).toString('base64'),
           oidcToken: {
