@@ -51,6 +51,7 @@ const upsertSubscription = async (payload: {
   stripeCustomerId: string;
   stripeSubscriptionId: string;
   stripePriceId: string;
+  tier: StripeTierKey | null;
   status: StripeStatus;
   currentPeriodEnd: Date | null;
 }) => {
@@ -60,6 +61,7 @@ const upsertSubscription = async (payload: {
       stripeCustomerId: payload.stripeCustomerId,
       stripeSubscriptionId: payload.stripeSubscriptionId,
       stripePriceId: payload.stripePriceId,
+      tier: payload.tier,
       status: payload.status,
       currentPeriodEnd: payload.currentPeriodEnd,
     })
@@ -69,6 +71,7 @@ const upsertSubscription = async (payload: {
         userId: payload.userId,
         stripeCustomerId: payload.stripeCustomerId,
         stripePriceId: payload.stripePriceId,
+        tier: payload.tier,
         status: payload.status,
         currentPeriodEnd: payload.currentPeriodEnd,
       },
@@ -215,6 +218,11 @@ app.post('/webhook', async (c) => {
         break;
       }
 
+      const tier = policyService.getTierForStripePriceId(priceId);
+      if (!tier) {
+        logger.warn('Stripe price ID not mapped to tier', { stripeCustomerId, subscriptionId: subscription.id, priceId });
+      }
+
       const currentPeriodEnd = subscription.current_period_end
         ? new Date(subscription.current_period_end * 1000)
         : null;
@@ -224,6 +232,7 @@ app.post('/webhook', async (c) => {
         stripeCustomerId,
         stripeSubscriptionId: subscription.id,
         stripePriceId: priceId,
+        tier,
         status: normalizeStatus(subscription.status),
         currentPeriodEnd,
       });

@@ -54,8 +54,9 @@ const resolveUserTier = async (userId: string): Promise<TierKey> => {
       eq(schema.subscriptions.status, 'active')
     ),
   });
+  const storedTier = subscription?.tier as TierKey | undefined;
   const mapped = subscription?.stripePriceId ? tierByPriceId[subscription.stripePriceId] : null;
-  return mapped || DEFAULT_TIER;
+  return storedTier || mapped || DEFAULT_TIER;
 };
 
 const enforceTierLimits = async (payload: JobPayload) => {

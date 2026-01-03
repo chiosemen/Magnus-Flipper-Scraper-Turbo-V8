@@ -36,7 +36,8 @@ export const policyService = {
       ),
     });
 
-    const tier = this.getTierForStripePriceId(subscription?.stripePriceId || null);
+    const storedTier = subscription?.tier;
+    const tier = storedTier || this.getTierForStripePriceId(subscription?.stripePriceId || null);
     return tier || DEFAULT_TIER;
   },
 };

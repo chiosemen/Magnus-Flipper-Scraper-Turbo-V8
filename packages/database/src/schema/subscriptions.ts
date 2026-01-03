@@ -6,6 +6,7 @@ export const subscriptions = pgTable('subscriptions', {
   stripeCustomerId: varchar('stripe_customer_id', { length: 128 }).notNull(),
   stripeSubscriptionId: varchar('stripe_subscription_id', { length: 128 }).primaryKey(),
   stripePriceId: varchar('stripe_price_id', { length: 128 }).notNull(),
+  tier: varchar('tier', { length: 32 }),
   status: varchar('status', { length: 32 }).notNull(),
   currentPeriodEnd: timestamp('current_period_end'),
 }, (table) => ({
