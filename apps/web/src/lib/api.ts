@@ -70,5 +70,10 @@ export const api = {
   users: {
     me: () => request<User>('/users/me'),
     updateSettings: (settings: UserSettings) => request<User>('/users/me/settings', { method: 'POST', body: JSON.stringify(settings) }),
-  }
+  },
+
+  stripe: {
+    checkout: (tier: 'basic' | 'pro' | 'elite' | 'enterprise') =>
+      request<{ url: string }>('/stripe/checkout', { method: 'POST', body: JSON.stringify({ tier }) }),
+  },
 };
