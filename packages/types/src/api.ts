@@ -51,3 +51,15 @@ export const RealtimeEventSchema = z.object({
   timestamp: z.string(),
 });
 export type RealtimeEvent = z.infer<typeof RealtimeEventSchema>;
+
+export interface DashboardStats {
+  today: {
+    dealsFound: number;
+    jobsRun: number;
+  };
+  total: {
+    deals: number;
+    monitors: number;
+    profitPotential: number;
+  };
+}
