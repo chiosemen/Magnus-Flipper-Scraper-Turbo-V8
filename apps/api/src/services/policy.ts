@@ -1,7 +1,9 @@
 import { db, schema } from '../lib/db';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 export type StripeTierKey = 'basic' | 'pro' | 'elite' | 'enterprise';
+
+const DEFAULT_TIER = 'free';
 
 const PRICE_ID_BY_TIER: Record<StripeTierKey, string | undefined> = {
   basic: process.env.STRIPE_PRICE_ID_BASIC,
@@ -26,10 +28,15 @@ export const policyService = {
     return tierByPriceId[priceId] || null;
   },
 
-  async getUserTier(userId: string): Promise<string | null> {
-    const user = await db.query.users.findFirst({
-      where: eq(schema.users.id, userId),
+  async getUserTier(userId: string): Promise<string> {
+    const subscription = await db.query.subscriptions.findFirst({
+      where: and(
+        eq(schema.subscriptions.userId, userId),
+        eq(schema.subscriptions.status, 'active')
+      ),
     });
-    return user?.tier ?? null;
+
+    const tier = this.getTierForStripePriceId(subscription?.stripePriceId || null);
+    return tier || DEFAULT_TIER;
   },
 };
