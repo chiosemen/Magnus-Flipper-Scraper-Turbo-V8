@@ -11,6 +11,7 @@ import { policyService, StripeTierKey } from '../services/policy';
 import { logger } from '@repo/logger';
 import { getStripeClient } from '../lib/stripe';
 import { assertDemoModeAllowsStripe } from '../services/demoMode.service';
+import { applyStripeTierChange } from '@repo/billing';
 
 type Env = {
   Variables: {
@@ -35,38 +36,6 @@ const getUserByStripeCustomerId = async (stripeCustomerId: string) => {
   return db.query.users.findFirst({
     where: eq(schema.users.stripeCustomerId, stripeCustomerId),
   });
-};
-
-const upsertSubscription = async (payload: {
-  userId: string;
-  stripeCustomerId: string;
-  stripeSubscriptionId: string;
-  stripePriceId: string;
-  tier: StripeTierKey | null;
-  status: StripeStatus;
-  currentPeriodEnd: Date | null;
-}) => {
-  await db.insert(schema.subscriptions)
-    .values({
-      userId: payload.userId,
-      stripeCustomerId: payload.stripeCustomerId,
-      stripeSubscriptionId: payload.stripeSubscriptionId,
-      stripePriceId: payload.stripePriceId,
-      tier: payload.tier,
-      status: payload.status,
-      currentPeriodEnd: payload.currentPeriodEnd,
-    })
-    .onConflictDoUpdate({
-      target: schema.subscriptions.stripeSubscriptionId,
-      set: {
-        userId: payload.userId,
-        stripeCustomerId: payload.stripeCustomerId,
-        stripePriceId: payload.stripePriceId,
-        tier: payload.tier,
-        status: payload.status,
-        currentPeriodEnd: payload.currentPeriodEnd,
-      },
-    });
 };
 
 const updateUserSubscriptionStatus = async (userId: string, status: StripeStatus) => {
@@ -211,22 +180,23 @@ app.post('/webhook', async (c) => {
         break;
       }
 
-      const tier = policyService.getTierForStripePriceId(priceId);
-      if (!tier) {
-        logger.warn('Stripe price ID not mapped to tier', { stripeCustomerId, subscriptionId: subscription.id, priceId });
-      }
-
+      const currentPeriodStart = subscription.current_period_start
+        ? new Date(subscription.current_period_start * 1000)
+        : null;
       const currentPeriodEnd = subscription.current_period_end
         ? new Date(subscription.current_period_end * 1000)
         : null;
 
-      await upsertSubscription({
+      await applyStripeTierChange({
+        db,
+        schema,
+        eventId: event.id,
         userId,
         stripeCustomerId,
         stripeSubscriptionId: subscription.id,
         stripePriceId: priceId,
-        tier,
         status: normalizeStatus(subscription.status),
+        currentPeriodStart,
         currentPeriodEnd,
       });
 

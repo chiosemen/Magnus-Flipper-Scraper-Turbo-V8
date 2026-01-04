@@ -4,13 +4,26 @@ import { Job, CreateJob, JobPayload, JobTypeEnum } from '@repo/types';
 import { AppError, NotFoundError } from '../utils/errors';
 import { createScrapeTask } from '../lib/cloudTasks';
 import { updateJobStatus } from '../lib/firestore';
-import { policyService } from './policy';
-import { getTierLimits, TIER_ERROR_CODES } from './tierLimits';
+import { TIER_ERROR_CODES } from './tierLimits';
 import { assertScrapingEnabled, resolveWorkerClass } from './killSwitch.service';
 import { assignCanaryMeta, assertGateOpenForDispatch } from './canary.service';
 import { logger } from '@repo/logger';
 import { assertMarketplaceWithinLimits } from './marketplaceRate.service';
 import { assertDemoModeAllowsDispatch, getDemoRateOverrides } from './demoMode.service';
+import { evaluateEnforcement, recordEnforcementEvent, resolveTuning } from '@repo/core';
+import { TierKey } from '@repo/billing';
+
+type EntitlementsSnapshot = {
+  tierKey: TierKey;
+  maxConcurrencyUser: number;
+  maxMonitors: number;
+  maxBoostedMonitors: number;
+  refreshIntervalFloorSeconds: number;
+  maxDailyRuns: number;
+  maxProxyGbPerDay: number;
+  entitlementsVersion?: number;
+};
+
 
 export const jobsService = {
   async listJobs(userId: string) {
@@ -31,6 +44,7 @@ export const jobsService = {
   },
 
   async createJob(userId: string, data: CreateJob) {
+    // Enforcement hook: jobs.service.ts is the single entrypoint for enforcement decisions.
     const workerClass = resolveWorkerClass({ type: data.type, monitorId: data.monitorId });
     await assertScrapingEnabled(data.source, workerClass);
     await assertGateOpenForDispatch(data.source);
@@ -38,20 +52,39 @@ export const jobsService = {
     const rateOverrides = demoContext.active ? getDemoRateOverrides() : undefined;
     await assertMarketplaceWithinLimits(data.source, rateOverrides);
 
-    const tier = await policyService.getUserTier(userId);
-    const limits = getTierLimits(tier);
+    const subscription = await db.query.subscriptions.findFirst({
+      where: eq(schema.subscriptions.userId, userId),
+      orderBy: [desc(schema.subscriptions.updatedAt)],
+    });
+
+    const entitlements = subscription?.entitlementsJson as EntitlementsSnapshot | null;
+    const hasValidEntitlements = entitlements
+      && entitlements.tierKey
+      && Number.isFinite(entitlements.maxConcurrencyUser)
+      && Number.isFinite(entitlements.maxMonitors)
+      && Number.isFinite(entitlements.maxBoostedMonitors)
+      && Number.isFinite(entitlements.refreshIntervalFloorSeconds)
+      && Number.isFinite(entitlements.maxDailyRuns)
+      && Number.isFinite(entitlements.maxProxyGbPerDay);
+    if (!hasValidEntitlements) {
+      throw new AppError(
+        'Entitlements snapshot missing',
+        403,
+        'ENTITLEMENTS_MISSING'
+      );
+    }
 
     const runningJobs = await db.execute(sql`
       SELECT count(*) as count FROM ${schema.jobs}
       WHERE user_id = ${userId} AND status = 'running'
     `);
     const runningCount = Number(runningJobs[0]?.count || 0);
-    if (runningCount >= limits.maxConcurrency) {
+    if (runningCount >= entitlements.maxConcurrencyUser) {
       throw new AppError(
         'Concurrency limit reached for tier',
         429,
         TIER_ERROR_CODES.CONCURRENCY_LIMIT,
-        { tier, limit: limits.maxConcurrency }
+        { tier: entitlements.tierKey, limit: entitlements.maxConcurrencyUser }
       );
     }
 
@@ -64,15 +97,68 @@ export const jobsService = {
       if (monitor.lastRunAt) {
         const lastRunAtMs = new Date(monitor.lastRunAt).getTime();
         const elapsedSec = (Date.now() - lastRunAtMs) / 1000;
-        if (elapsedSec < limits.minIntervalSec) {
+        if (elapsedSec < entitlements.refreshIntervalFloorSeconds) {
           throw new AppError(
             'Refresh interval floor not met for tier',
             429,
             TIER_ERROR_CODES.REFRESH_INTERVAL,
-            { tier, minIntervalSec: limits.minIntervalSec, lastRunAt: monitor.lastRunAt }
+            { tier: entitlements.tierKey, minIntervalSec: entitlements.refreshIntervalFloorSeconds, lastRunAt: monitor.lastRunAt }
           );
         }
       }
+    }
+
+    const marketplaceKey = ['facebook', 'vinted', 'ebay', 'gumtree'].includes(data.source)
+      ? (data.source as 'facebook' | 'vinted' | 'ebay' | 'gumtree')
+      : 'ebay';
+    const tierKey = entitlements.tierKey;
+    const dayKey = new Date().toISOString().slice(0, 10);
+    const telemetryRow = await db.query.usageTelemetry.findFirst({
+      where: and(
+        eq(schema.usageTelemetry.userId, userId),
+        eq(schema.usageTelemetry.marketplace, marketplaceKey),
+        eq(schema.usageTelemetry.dayKey, dayKey)
+      )
+    });
+
+    const recentTelemetry = {
+      fullRuns: telemetryRow?.fullRuns ?? 0,
+      partialRuns: telemetryRow?.partialRuns ?? 0,
+      signalChecks: telemetryRow?.signalChecks ?? 0,
+      proxyGbEstimated: telemetryRow?.proxyGbEstimated ?? 0,
+      cooldownUntil: telemetryRow?.cooldownUntil ?? null,
+    };
+
+    const enforcementDecision = evaluateEnforcement({
+      userId,
+      tier: tierKey,
+      marketplace: marketplaceKey,
+      requestedMode: 'FULL',
+      now: new Date(),
+      recentTelemetry,
+    });
+    const enforcementDecisionWithEntitlements = {
+      ...enforcementDecision,
+      audit: {
+        ...enforcementDecision.audit,
+        entitlementsSnapshot: entitlements,
+      },
+    };
+
+    if (!enforcementDecisionWithEntitlements.allowed) {
+      await recordEnforcementEvent(db, schema, {
+        userId,
+        marketplace: data.source,
+        tier: tierKey,
+        jobId: null,
+        decision: enforcementDecisionWithEntitlements,
+      });
+      throw new AppError(
+        'Enforcement blocked request',
+        429,
+        enforcementDecisionWithEntitlements.reason_code,
+        { nextAllowedAt: enforcementDecisionWithEntitlements.next_allowed_at || null }
+      );
     }
 
     // 1. Persist Job Record
@@ -105,6 +191,14 @@ export const jobsService = {
       meta: {
         userId,
         attempt: 1,
+        enforcementMode: enforcementDecisionWithEntitlements.mode,
+        enforcementDecision: enforcementDecisionWithEntitlements.mode === 'BLOCK'
+          ? 'DENY'
+          : enforcementDecisionWithEntitlements.audit.degrade_path.length > 1
+            ? 'DOWNGRADE'
+            : 'ALLOW',
+        enforcementReason: enforcementDecisionWithEntitlements.reason_code,
+        enforcementAudit: enforcementDecisionWithEntitlements.audit,
       }
     };
 
@@ -122,6 +216,80 @@ export const jobsService = {
     }
 
     logger.info('Job canary assignment', { jobId: job.id, source: data.source, ...canaryMeta });
+
+    const telemetrySnapshot = {
+      proxyUsageRatio: entitlements.maxProxyGbPerDay > 0
+        ? recentTelemetry.proxyGbEstimated / entitlements.maxProxyGbPerDay
+        : 0,
+      fullScrapeRatio: entitlements.maxDailyRuns > 0
+        ? recentTelemetry.fullRuns / entitlements.maxDailyRuns
+        : 0,
+    };
+    const tuning = resolveTuning({
+      marketplace: data.source,
+      tier: tierKey,
+      country: null,
+      telemetrySnapshot,
+    });
+
+    if (!tuning.enabled) {
+      await recordEnforcementEvent(db, schema, {
+        userId,
+        marketplace: data.source,
+        tier: tierKey,
+        jobId: job.id,
+        decision: {
+          allowed: false,
+          mode: 'BLOCK',
+          reason_code: tuning.reason || 'marketplace_disabled',
+          counters_delta: {},
+          audit: { guardrails_hit: ['marketplace_tuning'], degrade_path: ['BLOCK'] },
+        },
+      });
+      throw new AppError('Marketplace disabled by tuning', 429, 'MARKETPLACE_DISABLED', { reason: tuning.reason || null });
+    }
+
+    payload.meta.tuning = tuning;
+
+    await recordEnforcementEvent(db, schema, {
+      userId,
+      marketplace: data.source,
+      tier: tierKey,
+      jobId: job.id,
+      decision: enforcementDecisionWithEntitlements,
+    });
+
+    const deltaFull = enforcementDecisionWithEntitlements.counters_delta.full ? 1 : 0;
+    const deltaPartial = enforcementDecisionWithEntitlements.counters_delta.partial ? 1 : 0;
+    const deltaSignal = enforcementDecisionWithEntitlements.counters_delta.signal ? 1 : 0;
+    const deltaProxy = enforcementDecisionWithEntitlements.counters_delta.proxy_gb || 0;
+    const deltaCost = 0;
+    const lastResetAt = new Date(`${dayKey}T00:00:00.000Z`);
+
+    await db.insert(schema.usageTelemetry)
+      .values({
+        userId,
+        marketplace: marketplaceKey,
+        dayKey,
+        fullRuns: deltaFull,
+        partialRuns: deltaPartial,
+        signalChecks: deltaSignal,
+        proxyGbEstimated: deltaProxy,
+        costUsdEstimated: deltaCost,
+        lastResetAt,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [schema.usageTelemetry.userId, schema.usageTelemetry.marketplace, schema.usageTelemetry.dayKey],
+        set: {
+          fullRuns: sql`${schema.usageTelemetry.fullRuns} + ${deltaFull}`,
+          partialRuns: sql`${schema.usageTelemetry.partialRuns} + ${deltaPartial}`,
+          signalChecks: sql`${schema.usageTelemetry.signalChecks} + ${deltaSignal}`,
+          proxyGbEstimated: sql`${schema.usageTelemetry.proxyGbEstimated} + ${deltaProxy}`,
+          costUsdEstimated: sql`${schema.usageTelemetry.costUsdEstimated} + ${deltaCost}`,
+          updatedAt: new Date(),
+        },
+      });
 
     // 4. Dispatch Task
     await createScrapeTask(payload);

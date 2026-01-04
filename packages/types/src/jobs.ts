@@ -74,6 +74,11 @@ export const JobPayloadSchema = z.object({
     demo: z.boolean().optional(),
     demoSessionId: z.string().optional(),
     timeoutSec: z.number().optional(),
+    enforcementMode: z.enum(['FULL', 'PARTIAL', 'SIGNAL', 'BLOCK']).optional(),
+    enforcementDecision: z.enum(['ALLOW', 'DOWNGRADE', 'DENY']).optional(),
+    enforcementReason: z.string().optional(),
+    enforcementAudit: z.record(z.string(), z.any()).optional(),
+    tuning: z.record(z.string(), z.any()).optional(),
   })
 });
 export type JobPayload = z.infer<typeof JobPayloadSchema>;

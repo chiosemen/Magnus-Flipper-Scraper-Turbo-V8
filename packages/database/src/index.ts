@@ -13,6 +13,8 @@ import * as observabilityGatesSchema from './schema/observabilityGates';
 import * as adminAuditLogsSchema from './schema/adminAuditLogs';
 import * as canaryRampsSchema from './schema/canaryRamps';
 import * as marketplaceRateLimitsSchema from './schema/marketplaceRateLimits';
+import * as usageTelemetrySchema from './schema/usageTelemetry';
+import * as enforcementEventsSchema from './schema/enforcementEvents';
 
 const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/magnus_flipper';
 
@@ -32,7 +34,9 @@ export const db = drizzle(client, {
     ...observabilityGatesSchema,
     ...adminAuditLogsSchema,
     ...canaryRampsSchema,
-    ...marketplaceRateLimitsSchema
+    ...marketplaceRateLimitsSchema,
+    ...usageTelemetrySchema,
+    ...enforcementEventsSchema
   } 
 });
 
@@ -49,3 +53,5 @@ export * from './schema/observabilityGates';
 export * from './schema/adminAuditLogs';
 export * from './schema/canaryRamps';
 export * from './schema/marketplaceRateLimits';
+export * from './schema/usageTelemetry';
+export * from './schema/enforcementEvents';

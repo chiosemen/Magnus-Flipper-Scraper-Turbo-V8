@@ -13,6 +13,8 @@
     "@hono/zod-validator": "^0.2.2",
     "@repo/database": "workspace:*",
     "@repo/logger": "workspace:*",
+    "@repo/core": "workspace:*",
+    "@repo/billing": "workspace:*",
     "@repo/types": "workspace:*",
     "drizzle-orm": "^0.30.10",
     "firebase-admin": "^12.1.0",
