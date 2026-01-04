@@ -77,4 +77,11 @@ export const api = {
       request<{ url: string }>('/stripe/checkout', { method: 'POST', body: JSON.stringify({ tier }) }),
     portal: () => request<{ url: string }>('/stripe/portal'),
   },
+
+  admin: {
+    status: () => request<{ isAdmin: boolean }>('/admin/status'),
+    controls: () => request('/admin/controls'),
+    updateKillSwitches: (payload: Record<string, any>) =>
+      request('/admin/controls/kill-switches', { method: 'PATCH', body: JSON.stringify(payload) }),
+  },
 };

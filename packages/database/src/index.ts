@@ -8,6 +8,11 @@ import * as pricesSchema from './schema/prices';
 import * as alertsSchema from './schema/alerts';
 import * as analyticsSchema from './schema/analytics';
 import * as subscriptionsSchema from './schema/subscriptions';
+import * as scraperKillSwitchesSchema from './schema/scraperKillSwitches';
+import * as observabilityGatesSchema from './schema/observabilityGates';
+import * as adminAuditLogsSchema from './schema/adminAuditLogs';
+import * as canaryRampsSchema from './schema/canaryRamps';
+import * as marketplaceRateLimitsSchema from './schema/marketplaceRateLimits';
 
 const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/magnus_flipper';
 
@@ -22,7 +27,12 @@ export const db = drizzle(client, {
     ...pricesSchema,
     ...alertsSchema,
     ...analyticsSchema,
-    ...subscriptionsSchema
+    ...subscriptionsSchema,
+    ...scraperKillSwitchesSchema,
+    ...observabilityGatesSchema,
+    ...adminAuditLogsSchema,
+    ...canaryRampsSchema,
+    ...marketplaceRateLimitsSchema
   } 
 });
 
@@ -34,3 +44,8 @@ export * from './schema/prices';
 export * from './schema/alerts';
 export * from './schema/analytics';
 export * from './schema/subscriptions';
+export * from './schema/scraperKillSwitches';
+export * from './schema/observabilityGates';
+export * from './schema/adminAuditLogs';
+export * from './schema/canaryRamps';
+export * from './schema/marketplaceRateLimits';

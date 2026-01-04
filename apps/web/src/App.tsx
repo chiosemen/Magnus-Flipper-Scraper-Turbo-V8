@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/layout/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
+import { Admin } from './pages/Admin';
 import { useAuthStore } from './stores/authStore';
 import { Loader2 } from 'lucide-react';
 
@@ -51,6 +52,7 @@ function App() {
             <Route path="jobs" element={<div className="p-6 text-slate-400">Jobs List (To be implemented)</div>} />
             <Route path="analytics" element={<div className="p-6 text-slate-400">Analytics (To be implemented)</div>} />
             <Route path="settings" element={<div className="p-6 text-slate-400">Settings (To be implemented)</div>} />
+            <Route path="admin" element={<Admin />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/" replace />} />

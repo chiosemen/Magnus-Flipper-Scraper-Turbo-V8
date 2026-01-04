@@ -1,25 +1,23 @@
 
-import { Monitor, Marketplace } from '../types';
-
 // Simulating a Neon/Postgres Ledger
 class LedgerService {
   private events: any[] = [];
 
   async recordEvent(
     userId: string, 
-    eventType: 'refresh' | 'run' | 'overage' | 'boost' | 'throttle', 
+    eventType: 'run' | 'overage' | 'boost' | 'throttle', 
     monitorId: string, 
     units: number, 
     meta: any
   ) {
     const event = {
       id: crypto.randomUUID(),
-      userId,
-      eventType,
-      monitorId,
+      user_id: userId,
+      event_type: eventType,
+      monitor_id: monitorId,
       units,
       meta,
-      timestamp: new Date().toISOString()
+      created_at: new Date().toISOString()
     };
     
     // In production: INSERT INTO usage_events ...

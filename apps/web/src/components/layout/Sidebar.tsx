@@ -3,9 +3,29 @@ import { LayoutDashboard, ShoppingCart, Bell, Activity, Settings, LogOut, Databa
 import { useAuthStore } from '../../stores/authStore';
 import { auth } from '../../lib/firebase';
 import { signOut } from 'firebase/auth';
+import { useEffect, useState } from 'react';
+import { api } from '../../lib/api';
 
 export const Sidebar = () => {
   const user = useAuthStore(s => s.user);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (!user) return;
+      try {
+        const result = await api.admin.status();
+        if (active) setIsAdmin(!!result.isAdmin);
+      } catch {
+        if (active) setIsAdmin(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const links = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -15,6 +35,10 @@ export const Sidebar = () => {
     { to: '/analytics', label: 'Analytics', icon: Database },
     { to: '/settings', label: 'Settings', icon: Settings },
   ];
+
+  if (isAdmin) {
+    links.push({ to: '/admin', label: 'Admin', icon: Settings });
+  }
 
   return (
     <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 h-screen">

@@ -69,6 +69,11 @@ export const JobPayloadSchema = z.object({
   meta: z.object({
     userId: z.string(),
     attempt: z.number().default(1),
+    canary: z.boolean().optional(),
+    canaryRamp: z.number().optional(),
+    demo: z.boolean().optional(),
+    demoSessionId: z.string().optional(),
+    timeoutSec: z.number().optional(),
   })
 });
 export type JobPayload = z.infer<typeof JobPayloadSchema>;

@@ -23,12 +23,26 @@ class VirtualRedis {
     }, 1000);
   }
 
+  private evictIfExpired(key: string) {
+    const exp = this.expiries.get(key);
+    if (!exp) return false;
+    if (Date.now() > exp) {
+      this.kv.delete(key);
+      this.zsets.delete(key);
+      this.expiries.delete(key);
+      return true;
+    }
+    return false;
+  }
+
   // --- KV Operations ---
   async get(key: string): Promise<string | null> {
+    this.evictIfExpired(key);
     return this.kv.get(key) || null;
   }
 
   async set(key: string, value: string, opts?: { nx?: boolean; ex?: number }): Promise<boolean | 'OK' | null> {
+    this.evictIfExpired(key);
     if (opts?.nx && this.kv.has(key)) return null;
     
     this.kv.set(key, value);
@@ -39,18 +53,21 @@ class VirtualRedis {
   }
 
   async incr(key: string): Promise<number> {
+    this.evictIfExpired(key);
     const val = (this.kv.get(key) || 0) + 1;
     this.kv.set(key, val);
     return val;
   }
 
   async decr(key: string): Promise<number> {
+    this.evictIfExpired(key);
     const val = (this.kv.get(key) || 0) - 1;
     this.kv.set(key, val);
     return val;
   }
 
   async del(key: string): Promise<number> {
+    this.evictIfExpired(key);
     const existed = this.kv.delete(key);
     this.zsets.delete(key);
     return existed ? 1 : 0;
@@ -58,12 +75,14 @@ class VirtualRedis {
 
   // --- ZSET Operations (Scheduler) ---
   async zadd(key: string, score: number, member: string): Promise<number> {
+    this.evictIfExpired(key);
     if (!this.zsets.has(key)) this.zsets.set(key, new Map());
     this.zsets.get(key)!.set(member, score);
     return 1;
   }
 
   async zrangebyscore(key: string, min: number | '-inf', max: number | '+inf', opts?: { limit?: { offset: number; count: number } }): Promise<string[]> {
+    this.evictIfExpired(key);
     const set = this.zsets.get(key);
     if (!set) return [];
 
@@ -83,6 +102,7 @@ class VirtualRedis {
   }
 
   async zrem(key: string, member: string): Promise<number> {
+    this.evictIfExpired(key);
     const set = this.zsets.get(key);
     if (!set) return 0;
     return set.delete(member) ? 1 : 0;
@@ -90,6 +110,7 @@ class VirtualRedis {
 
   // --- Hash Operations (Jobs) ---
   async hset(key: string, field: string, value: any) {
+    this.evictIfExpired(key);
     let hash = this.kv.get(key);
     if (!hash) hash = {};
     hash[field] = value;
@@ -97,6 +118,7 @@ class VirtualRedis {
   }
 
   async hgetall(key: string) {
+    this.evictIfExpired(key);
     return this.kv.get(key) || {};
   }
 }

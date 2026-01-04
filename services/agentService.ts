@@ -63,7 +63,9 @@ export const agentService = {
       timestamp: new Date().toISOString(),
       meta: {
         profitPotential: listing.profitPotential,
-        condition: listing.condition
+        condition: listing.condition,
+        pricingType: listing.pricingType,
+        antiBot: listing.antiBot
       }
     };
 

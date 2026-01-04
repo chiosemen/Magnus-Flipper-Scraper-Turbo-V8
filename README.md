@@ -12,10 +12,18 @@ View your app in AI Studio: https://ai.studio/apps/drive/15yEs1C09qgHemGGTipLUkR
 
 Production targets for the Mixtape release:
 - `apps/web` (dashboard)
-- `apps/api` (API + orchestration)
-- `apps/worker` (job execution)
+- `api` (API + orchestration)
+- `workers` (job execution)
 
 The root SPA (repo root `App.tsx`, `pages/`, `components/`, `services/`) is legacy and out-of-scope for Mixtape shipping. Root SPA build/runtime errors are non-blocking for Mixtape deploys.
+
+## Stripe Mode Isolation
+
+Stripe is hard-isolated by mode:
+- `STRIPE_MODE` must be `test` or `live`
+- `STRIPE_TEST_SECRET_KEY` is required for test mode
+- `STRIPE_LIVE_SECRET_KEY` is required for live mode
+- Live mode is blocked unless `NODE_ENV=production`
 
 ## Run Locally
 

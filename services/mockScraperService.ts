@@ -47,17 +47,19 @@ class MagnusFlipperBackend {
     // 2. Seed Monitor
     const m1: Monitor = {
       id: 'mon_1',
-      userId: 'user_google_123',
+      user_id: 'user_google_123',
       name: 'Sony Headphones (Boosted)',
       query: 'https://amazon.com/sony-wh1000xm5',
       marketplaces: ['amazon', 'ebay'],
-      refreshIntervalSec: 3600,
-      boostIntervalSec: 30, // Fast refresh for demo
-      isBoosted: true,
-      nextRefreshAt: Date.now()
+      refresh_interval_sec: 3600,
+      boost_interval_sec: 1800,
+      is_enabled: true,
+      priority: 10,
+      next_refresh_at: Date.now()
     };
 
-    await redis.hset(`mf:monitor:${m1.id}`, 'data', m1);
+    await redis.hset(`mf:job:${m1.id}`, 'monitor', JSON.stringify(m1));
+    await redis.hset(`mf:job:${m1.id}`, 'throttle_count', '0');
     await redis.zadd('mf:queue:refresh', Date.now(), m1.id);
   }
 
@@ -263,15 +265,19 @@ class MagnusFlipperBackend {
 
   private generateGenericResults(jobId: string, site: Marketplace, url: string): Listing[] {
     // ... existing generation logic ...
-    const count = Math.floor(Math.random() * 5) + 3;
+    const seed = this.hashSeed(`${jobId}:${site}:${url}`);
+    const count = 3 + (seed % 3);
     const results: Listing[] = [];
 
     for (let i = 0; i < count; i++) {
+      const price = 50 + ((seed + (i * 37)) % 450);
+      const sellerIndex = 100 + ((seed + (i * 13)) % 900);
+      const profitPotential = 20 + ((seed + (i * 17)) % 80);
       results.push({
         id: `res-${jobId}-${i}`,
         jobId: jobId,
-        title: this.getFakeTitle(site),
-        price: Math.floor(Math.random() * 500) + 20,
+        title: this.getFakeTitle(site, seed + i),
+        price,
         currency: '$',
         location: 'Online',
         link: url,
@@ -280,24 +286,34 @@ class MagnusFlipperBackend {
         reviews: 100,
         marketplace: site,
         condition: 'Used - Good',
-        sellerName: `Seller_${Math.floor(Math.random() * 999)}`,
+        sellerName: `Seller_${sellerIndex}`,
         isSpam: false,
         postedTime: 'Just now',
         automationStatus: 'idle',
-        profitPotential: Math.floor(Math.random() * 100),
+        profitPotential,
         isSaved: false
       });
     }
     return results;
   }
 
-  private getFakeTitle(site: Marketplace): string {
+  private getFakeTitle(site: Marketplace, seed: number): string {
     const products = ['Sony WH-1000XM5', 'MacBook Pro M2', 'Vintage Levis 501', 'PlayStation 5 Slim', 'Herman Miller Aeron'];
-    return products[Math.floor(Math.random() * products.length)];
+    const index = seed % products.length;
+    return products[index];
   }
 
   private delay(ms: number) {
     return new Promise(r => setTimeout(r, ms));
+  }
+
+  private hashSeed(input: string) {
+    let hash = 2166136261;
+    for (let i = 0; i < input.length; i += 1) {
+      hash ^= input.charCodeAt(i);
+      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+    return hash >>> 0;
   }
 }
 

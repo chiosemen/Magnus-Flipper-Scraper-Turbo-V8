@@ -24,15 +24,16 @@ export interface TierConfig {
 
 export interface Monitor {
   id: string;
-  userId: string;
+  user_id: string;
   name: string;
   query: string;
   marketplaces: Marketplace[];
-  refreshIntervalSec: number;
-  boostIntervalSec?: number; // For 30-min boost
-  isBoosted?: boolean;
-  nextRefreshAt: number; // Unix timestamp
-  lastRefreshAt?: number;
+  refresh_interval_sec: number;
+  boost_interval_sec?: number | null;
+  is_enabled: boolean;
+  priority: number;
+  next_refresh_at?: number;
+  last_refresh_at?: number;
 }
 
 export interface ScrapeJob {
@@ -67,9 +68,15 @@ export interface Listing {
   rating: number;
   reviews: number;
   marketplace: Marketplace;
+  pricingType?: 'auction' | 'fixed';
   condition: 'New' | 'Used - Like New' | 'Used - Good' | 'Refurbished' | 'Unknown' | 'New with tags' | 'New without tags' | 'Very Good' | 'Good' | 'Satisfactory';
   sellerName: string;
   sellerJoinedYear?: number;
+  antiBot?: {
+    blocked: boolean;
+    provider?: 'datadome' | 'captcha' | 'cloudflare' | 'akamai' | 'unknown';
+    signal?: string;
+  };
   isSpam: boolean;
   spamReason?: string;
   postedTime: string;

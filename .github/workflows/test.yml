@@ -1,0 +1,145 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Clean install
+        run: npm ci
+      - name: API unit tests
+        run: npm run test:api:unit
+      - name: Worker unit tests
+        run: npm run test:workers:unit
+      - name: Require coverage output
+        run: test -f coverage/lcov.info
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  integration-tests:
+    name: Integration Tests
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: magnus_flipper_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/magnus_flipper_test
+      FIREBASE_AUTH_EMULATOR_HOST: localhost:9099
+      FIRESTORE_EMULATOR_HOST: localhost:8080
+      FIREBASE_EMULATOR_HUB: localhost:4400
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Clean install
+        run: npm ci
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+      - name: Wait for Postgres
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U postgres && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Integration tests
+        run: npm run test:integration
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: test-results
+          if-no-files-found: error
+
+  e2e-tests:
+    name: E2E Tests
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Clean install
+        run: npm ci
+      - name: Start test environment
+        run: docker compose -f docker-compose.test.yml up -d
+      - name: Wait for services
+        run: |
+          for i in {1..60}; do
+            curl -fsS http://localhost:8080/api/health/ready && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: E2E tests
+        run: npm run test:e2e
+      - name: Upload E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: error
+      - name: Shutdown test environment
+        if: always()
+        run: docker compose -f docker-compose.test.yml down
+
+  load-tests:
+    name: Load Tests
+    needs: e2e-tests
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ secrets.STAGING_API_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+      - name: Run baseline load test
+        run: k6 run --summary-export k6-summary.json load/scenarios/baseline.js
+      - name: Upload k6 results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-results
+          path: k6-summary.json
+          if-no-files-found: error

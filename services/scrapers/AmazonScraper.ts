@@ -33,27 +33,51 @@ export class AmazonScraper {
   }
 
   private generateMockResults(jobId: string, url: string): Listing[] {
-    const count = Math.floor(Math.random() * 6) + 4;
-    return Array.from({ length: count }).map((_, i) => ({
-      id: `amz-${jobId}-${i}`,
-      jobId,
-      title: `[Prime] Sony WH-1000XM5 Wireless Noise Canceling Headphones - ${['Black', 'Silver', 'Midnight Blue'][i % 3]}`,
-      price: 348 - (i * 10),
-      currency: '$',
-      location: 'Amazon Warehouse',
-      link: url,
-      imageUrl: `https://picsum.photos/seed/amz${jobId}${i}/300/300`,
-      rating: 4.5 + (Math.random() * 0.5),
-      reviews: 12000 + (i * 500),
-      marketplace: 'amazon',
-      condition: i === 0 ? 'New' : 'Used - Like New',
-      sellerName: 'Amazon.com Services LLC',
-      isSpam: false,
-      postedTime: 'Prime Delivery',
-      automationStatus: 'idle',
-      profitPotential: 45 + (i * 2),
-      isSaved: false
-    }));
+    const catalog = [
+      { title: 'Sony WH-1000XM5 Wireless Noise Canceling Headphones - Black', price: 348, condition: 'New', rating: 4.7, reviews: 12854 },
+      { title: 'Bose QuietComfort Ultra Headphones - Smoke White', price: 329, condition: 'New', rating: 4.6, reviews: 9432 },
+      { title: 'Apple AirPods Pro (2nd Gen) - MagSafe Case', price: 199, condition: 'New', rating: 4.8, reviews: 21504 },
+      { title: 'Sennheiser Momentum 4 Wireless - Graphite', price: 279, condition: 'New', rating: 4.5, reviews: 6210 },
+      { title: 'Sony WF-1000XM5 True Wireless - Black', price: 248, condition: 'New', rating: 4.4, reviews: 5321 },
+      { title: 'Beats Studio Pro - Sandstone', price: 299, condition: 'New', rating: 4.3, reviews: 3881 },
+    ];
+
+    const seed = this.hashSeed(`${jobId}:${url}`);
+    const count = Math.min(4, catalog.length);
+    const offset = seed % catalog.length;
+
+    return Array.from({ length: count }).map((_, i) => {
+      const item = catalog[(offset + i) % catalog.length];
+      return {
+        id: `amz-${jobId}-${i}`,
+        jobId,
+        title: `[Prime] ${item.title}`,
+        price: item.price,
+        currency: '$',
+        location: 'Amazon Warehouse',
+        link: url,
+        imageUrl: `https://picsum.photos/seed/amz${jobId}${i}/300/300`,
+        rating: item.rating,
+        reviews: item.reviews,
+        marketplace: 'amazon',
+        condition: item.condition as Listing['condition'],
+        sellerName: 'Amazon.com Services LLC',
+        isSpam: false,
+        postedTime: 'Prime Delivery',
+        automationStatus: 'idle',
+        profitPotential: 45 + (i * 2),
+        isSaved: false
+      };
+    });
+  }
+
+  private hashSeed(input: string) {
+    let hash = 2166136261;
+    for (let i = 0; i < input.length; i += 1) {
+      hash ^= input.charCodeAt(i);
+      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+    return hash >>> 0;
   }
 
   private delay(ms: number) {

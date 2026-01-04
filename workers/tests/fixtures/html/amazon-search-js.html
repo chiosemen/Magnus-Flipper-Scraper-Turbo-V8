@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Amazon Search Results (JS)</title>
+  </head>
+  <body>
+    <div id="results-root"></div>
+    <script>
+      setTimeout(() => {
+        const root = document.getElementById('results-root');
+        root.innerHTML = `
+          <div data-component-type="s-search-result" data-asin="B0TEST9012">
+            <h2>
+              <a href="/dp/B0TEST9012">
+                <span>Kindle Paperwhite (16 GB)</span>
+              </a>
+            </h2>
+            <span class="a-price">
+              <span class="a-offscreen">$139.99</span>
+            </span>
+            <img class="s-image" src="https://images-na.ssl-images-amazon.com/images/I/kindle.jpg" />
+            <span class="a-color-success">In Stock</span>
+          </div>
+        `;
+      }, 50);
+    </script>
+  </body>
+</html>

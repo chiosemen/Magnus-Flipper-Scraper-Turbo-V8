@@ -11,15 +11,12 @@ export default defineConfig({
     globals: true,
     // React components require jsdom, not node
     environment: 'jsdom',
-    setupFiles: ['./setupTests.ts'],
+    setupFiles: ['./shared/tests/setup.ts'],
     
     // Look for tests in flat structure and subdirectories
     include: [
-      '**/*.test.{ts,tsx}',
-      '**/*.spec.{ts,tsx}',
-      'services/**/*.test.{ts,tsx}',
-      'scrapers/**/*.test.{ts,tsx}',
-      'components/**/*.test.{ts,tsx}',
+      'shared/tests/**/*.test.{ts,tsx}',
+      'shared/tests/**/*.spec.{ts,tsx}',
     ],
     exclude: [
       'node_modules/**',
@@ -42,7 +39,7 @@ export default defineConfig({
         'types.ts',
         'vite.config.ts',
         'vitest.config.ts',
-        'setupTests.ts',
+        'shared/tests/setup.ts',
       ],
       thresholds: {
         lines: 80,

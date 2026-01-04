@@ -1,5 +1,5 @@
 packages:
   - "apps/web"
-  - "apps/api"
-  - "apps/worker"
+  - "api"
+  - "workers"
   - "packages/*"
