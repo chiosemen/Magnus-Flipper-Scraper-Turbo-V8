@@ -7,6 +7,7 @@ import { assertScrapingEnabled } from './services/killSwitch.service';
 import { assertGateOpen } from './services/observabilityGate.service';
 import { assertMarketplaceWithinLimits } from './services/marketplaceRate.service';
 import { assertDemoModeAllowsExecution, getDemoRateOverrides, DemoModeError, DEMO_ERROR_CODES } from './services/demoMode.service';
+import { assertConcurrencyWithinLimits, ConcurrencyBackoffError } from './services/concurrency.service';
 
 const app = new Hono();
 const router = new JobRouter();
@@ -44,6 +45,7 @@ app.post('/v1/process', async (c) => {
     const demoState = await assertDemoModeAllowsExecution(payload.meta.userId, payload.source);
     const rateOverrides = demoState.active ? getDemoRateOverrides() : undefined;
     await assertMarketplaceWithinLimits(payload.source, rateOverrides);
+    await assertConcurrencyWithinLimits(payload);
 
     // Execute Job
     // Note: Cloud Tasks expects a 200 OK fast.
@@ -66,6 +68,11 @@ app.post('/v1/process', async (c) => {
     return c.json({ success: true, jobId: payload.jobId });
   } catch (error) {
     const errorCode = (error as any)?.code;
+    if (error instanceof ConcurrencyBackoffError) {
+      const retryAfter = error.retryAfterSec;
+      c.header('Retry-After', String(retryAfter));
+      return c.json({ error: error.message, code: error.code, reason: error.reason, retryAfterSec: retryAfter }, 429);
+    }
     if (errorCode) {
       logger.warn('Worker rejected job', { code: errorCode, message: (error as Error).message });
       return c.json({ error: (error as Error).message, code: errorCode }, 200);

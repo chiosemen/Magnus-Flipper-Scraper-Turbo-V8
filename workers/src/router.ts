@@ -3,6 +3,8 @@ import { BaseScraper } from './scrapers/base.scraper';
 import { CraigslistScraper } from './scrapers/craigslist.scraper';
 import { EbayScraper } from './scrapers/ebay.scraper';
 import { AmazonScraper } from './scrapers/amazon.scraper';
+import { FacebookScraper } from './scrapers/facebook.scraper';
+import { VintedScraper } from './scrapers/vinted/vinted.scraper';
 import { StatusService } from './services/status.service';
 import { logger } from '@repo/logger';
 import { db, schema } from './lib/db';
@@ -115,7 +117,8 @@ export class JobRouter {
       craigslist: new CraigslistScraper(),
       ebay: new EbayScraper(),
       amazon: new AmazonScraper(),
-      // facebook: new FacebookScraper(), // To be implemented
+      facebook: new FacebookScraper(),
+      vinted: new VintedScraper(),
       // generic: new GenericScraper(),
     };
   }
