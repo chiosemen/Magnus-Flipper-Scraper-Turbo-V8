@@ -2,7 +2,7 @@ import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import { createApiClient } from '../../helpers/supertest';
 import { resetDatabase, seedBaselineConfigs, seedUser } from '../../helpers/db';
 import { db, schema } from '../../../src/lib/db';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 const authHeader = { Authorization: 'Bearer test-token' };
 const ORIGINAL_ENV = { ...process.env };
@@ -76,8 +76,14 @@ describe('API concurrency enforcement (integration)', () => {
         searchQuery: 'bike',
       });
 
-    expect(res.status).toBe(429);
-    expect(res.body?.error?.code).toBe('TIER_CONCURRENCY_LIMIT');
+    expect(res.status).toBe(201);
+
+    const [event] = await db.query.enforcementEvents.findMany({
+      orderBy: [desc(schema.enforcementEvents.createdAt)],
+      limit: 1,
+    });
+    expect(event?.mode).toBe('THROTTLED');
+    expect(event?.reasonCode).toBe('MAX_CONCURRENCY_EXCEEDED');
   });
 
   it('applies downgraded entitlements immediately', async () => {
@@ -114,8 +120,14 @@ describe('API concurrency enforcement (integration)', () => {
         searchQuery: 'phone',
       });
 
-    expect(blockRes.status).toBe(429);
-    expect(blockRes.body?.error?.code).toBe('TIER_CONCURRENCY_LIMIT');
+    expect(blockRes.status).toBe(201);
+
+    const [event] = await db.query.enforcementEvents.findMany({
+      orderBy: [desc(schema.enforcementEvents.createdAt)],
+      limit: 1,
+    });
+    expect(event?.mode).toBe('THROTTLED');
+    expect(event?.reasonCode).toBe('MAX_CONCURRENCY_EXCEEDED');
   });
 
   it('fails closed when entitlements snapshot missing', async () => {
