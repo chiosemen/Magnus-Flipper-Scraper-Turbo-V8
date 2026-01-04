@@ -21,6 +21,8 @@ export const PipelineStepReportSchema = z.object({
   producedKeys: z.array(z.string()).default([]),
 });
 
+export type PipelineStepReport = z.infer<typeof PipelineStepReportSchema>;
+
 export const PipelineResultEnvelopeSchema = z.object({
   runId: PipelineRunIdSchema,
   decision: PipelineDecisionSchema,

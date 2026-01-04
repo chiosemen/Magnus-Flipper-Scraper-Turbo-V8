@@ -8,7 +8,11 @@ export const ReplayModeSchema = z.enum([
   'ALLOW_REPLAY_SOFT',
 ]);
 
+export type ReplayMode = z.infer<typeof ReplayModeSchema>;
+
 export const IdempotencyScopeSchema = z.enum(['LISTING', 'USER', 'GLOBAL']);
+
+export type IdempotencyScope = z.infer<typeof IdempotencyScopeSchema>;
 
 export const IdempotencyReceiptSchema = z.object({
   idempotencyKey: IdempotencyKeySchema,
