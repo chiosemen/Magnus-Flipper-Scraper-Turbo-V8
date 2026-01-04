@@ -76,6 +76,24 @@ export const MARKETPLACE_PARAMS: Record<Marketplace, MarketplaceParams> = {
   },
 };
 
+export const REFRESH_COST_USD_PER_RUN = 0.5;
+export const PROXY_GB_COST_USD = 1.5;
+
+export const MARKETPLACE_COST_MULTIPLIERS: Record<Marketplace, number> = {
+  facebook: 1.25,
+  vinted: 1.05,
+  ebay: 0.95,
+  gumtree: 0.8,
+};
+
+export const TIER_COST_CEILING: Record<TierKey, number> = {
+  free: 3,
+  basic: 12,
+  pro: 35,
+  elite: 90,
+  enterprise: 260,
+};
+
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
 

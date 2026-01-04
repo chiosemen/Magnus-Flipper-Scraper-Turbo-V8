@@ -8,9 +8,13 @@ import { assertGateOpen } from './services/observabilityGate.service';
 import { assertMarketplaceWithinLimits } from './services/marketplaceRate.service';
 import { assertDemoModeAllowsExecution, getDemoRateOverrides, DemoModeError, DEMO_ERROR_CODES } from './services/demoMode.service';
 import { assertConcurrencyWithinLimits, ConcurrencyBackoffError } from './services/concurrency.service';
+import { DeltaCheckService } from './services/deltaCheck.service';
+import { StatusService } from './services/status.service';
 
 const app = new Hono();
 const router = new JobRouter();
+const deltaCheckService = new DeltaCheckService();
+const statusService = new StatusService();
 
 app.get('/health', (c) => c.json({ status: 'ok', worker: 'active' }));
 
@@ -46,6 +50,22 @@ app.post('/v1/process', async (c) => {
     const rateOverrides = demoState.active ? getDemoRateOverrides() : undefined;
     await assertMarketplaceWithinLimits(payload.source, rateOverrides);
     await assertConcurrencyWithinLimits(payload);
+
+    const deltaResult = deltaCheckService.evaluate(payload);
+    if (deltaResult.shortCircuit) {
+      await statusService.updateStatus(payload.jobId, 'running', 10, { startedAt: new Date() });
+      await statusService.updateStatus(payload.jobId, 'completed', 100, {
+        dealsFound: 0,
+        dealsNew: 0,
+        deltaSignal: deltaResult.signal,
+      });
+      return c.json({
+        success: true,
+        jobId: payload.jobId,
+        deltaShortCircuit: true,
+        deltaSignal: deltaResult.signal,
+      });
+    }
 
     // Execute Job
     // Note: Cloud Tasks expects a 200 OK fast.

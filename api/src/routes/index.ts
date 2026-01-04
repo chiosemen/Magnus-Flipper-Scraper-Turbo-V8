@@ -8,6 +8,7 @@ import analyticsRoutes from './analytics.routes';
 import userRoutes from './users.routes';
 import stripeRoutes from './stripe.routes';
 import adminRoutes from './admin.routes';
+import telemetryRoutes from './telemetry.routes';
 
 const app = new Hono();
 
@@ -20,5 +21,6 @@ app.route('/analytics', analyticsRoutes);
 app.route('/users', userRoutes);
 app.route('/stripe', stripeRoutes);
 app.route('/admin', adminRoutes);
+app.route('/telemetry', telemetryRoutes);
 
 export default app;

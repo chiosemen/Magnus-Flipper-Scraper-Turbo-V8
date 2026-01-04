@@ -33,6 +33,7 @@ export type UsageTelemetrySnapshot = {
   partialRuns: number;
   signalChecks: number;
   proxyGbEstimated: number;
+  marketplace: Marketplace;
 };
 
 export type EnforcementJobContext = {
@@ -128,6 +129,7 @@ const buildPricingUsageSnapshot = (
     dailyRuns: usageTelemetry.fullRuns,
     proxyGbToday: usageTelemetry.proxyGbEstimated,
     lastRunAt: jobContext.monitorLastRunAt ?? null,
+    marketplace: usageTelemetry.marketplace,
   };
 };
 

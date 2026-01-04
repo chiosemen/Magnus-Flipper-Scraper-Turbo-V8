@@ -7,6 +7,9 @@
   "type": "module",
   "scripts": {
     "start": "vite",
+    "start:api": "pnpm --filter @repo/api build && PORT=3000 pnpm --filter @repo/api start",
+    "start:workers": "pnpm --filter @repo/worker build && PORT=8081 pnpm --filter @repo/worker start",
+    "start:production": "pnpm start:api & pnpm start:workers & wait",
     "build": "vite build",
     "test": "vitest run --workspace",
     "test:watch": "vitest --workspace",

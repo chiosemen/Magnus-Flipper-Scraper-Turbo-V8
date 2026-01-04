@@ -1,3 +1,11 @@
+import type { Marketplace } from '../../economics/src/tieredRefresh.model';
+import {
+  MARKETPLACE_COST_MULTIPLIERS,
+  PROXY_GB_COST_USD,
+  REFRESH_COST_USD_PER_RUN,
+  TIER_COST_CEILING,
+} from '../../economics/src/tieredRefresh.model';
+
 export type TierKey = 'free' | 'basic' | 'pro' | 'elite' | 'enterprise';
 export type GuardrailAction = 'SIGNAL_ONLY' | 'PARTIAL_FETCH' | 'FULL_SCRAPE';
 
@@ -22,6 +30,7 @@ export type PricingUsageSnapshot = {
   dailyRuns: number;
   proxyGbToday: number;
   lastRunAt?: Date | null;
+  marketplace?: Marketplace;
 };
 
 export type PricingGuardrailsDecision = 'ALLOW' | 'THROTTLE' | 'BLOCK';
@@ -189,8 +198,35 @@ export const evaluatePricingGuardrails = (input: {
     };
   }
 
+  const estimatedCost = estimateDailyCost(entitlements, usageSnapshot);
+  const tierCeiling = TIER_COST_CEILING[entitlements.tierKey];
+  if (Number.isFinite(tierCeiling) && estimatedCost > tierCeiling) {
+    return {
+      decision: 'THROTTLE',
+      reason_code: 'DAILY_COST_LIMIT_EXCEEDED',
+      violated_limit: 'tierCostCeiling',
+      suggested_action: 'SOFT_LIMIT',
+    };
+  }
+
   return {
     decision: 'ALLOW',
     reason_code: 'ALLOWED',
   };
+};
+
+const resolveMultiplier = (marketplace?: Marketplace) => {
+  if (!marketplace) return 1;
+  const multiplier = MARKETPLACE_COST_MULTIPLIERS[marketplace];
+  return Number.isFinite(multiplier) ? multiplier : 1;
+};
+
+export const estimateDailyCost = (
+  entitlements: EntitlementsSnapshot,
+  usageSnapshot: PricingUsageSnapshot
+): number => {
+  const refreshCost = usageSnapshot.dailyRuns * REFRESH_COST_USD_PER_RUN;
+  const proxyCost = usageSnapshot.proxyGbToday * PROXY_GB_COST_USD;
+  const multiplier = resolveMultiplier(usageSnapshot.marketplace);
+  return (refreshCost + proxyCost) * multiplier;
 };

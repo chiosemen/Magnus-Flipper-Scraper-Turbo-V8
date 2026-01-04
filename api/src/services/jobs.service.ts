@@ -4,14 +4,19 @@ import { Job, CreateJob, JobPayload, JobTypeEnum } from '@repo/types';
 import { AppError, NotFoundError } from '../utils/errors';
 import { createScrapeTask } from '../lib/cloudTasks';
 import { updateJobStatus } from '../lib/firestore';
-import { TIER_ERROR_CODES } from './tierLimits';
 import { assertScrapingEnabled, resolveWorkerClass } from './killSwitch.service';
 import { assignCanaryMeta, assertGateOpenForDispatch } from './canary.service';
 import { logger } from '@repo/logger';
 import { assertMarketplaceWithinLimits } from './marketplaceRate.service';
 import { assertDemoModeAllowsDispatch, getDemoRateOverrides } from './demoMode.service';
-import { evaluateEnforcement, recordEnforcementEvent, resolveTuning } from '@repo/core';
+import { recordEnforcementEvent, resolveTuning } from '@repo/core';
 import { TierKey } from '@repo/billing';
+import type { Marketplace } from '../../../packages/economics/src/tieredRefresh.model';
+import { evaluateEnforcementGate } from '../../../packages/telemetry/src/enforcementGate';
+import {
+  buildTelemetryIncrement,
+  recordEnforcementEventIfNeeded,
+} from '../../../packages/telemetry/src/costTelemetry';
 
 type EntitlementsSnapshot = {
   tierKey: TierKey;
@@ -57,62 +62,28 @@ export const jobsService = {
       orderBy: [desc(schema.subscriptions.updatedAt)],
     });
 
+    const now = new Date();
     const entitlements = subscription?.entitlementsJson as EntitlementsSnapshot | null;
-    const hasValidEntitlements = entitlements
-      && entitlements.tierKey
-      && Number.isFinite(entitlements.maxConcurrencyUser)
-      && Number.isFinite(entitlements.maxMonitors)
-      && Number.isFinite(entitlements.maxBoostedMonitors)
-      && Number.isFinite(entitlements.refreshIntervalFloorSeconds)
-      && Number.isFinite(entitlements.maxDailyRuns)
-      && Number.isFinite(entitlements.maxProxyGbPerDay);
-    if (!hasValidEntitlements) {
-      throw new AppError(
-        'Entitlements snapshot missing',
-        403,
-        'ENTITLEMENTS_MISSING'
-      );
-    }
 
     const runningJobs = await db.execute(sql`
       SELECT count(*) as count FROM ${schema.jobs}
       WHERE user_id = ${userId} AND status = 'running'
     `);
     const runningCount = Number(runningJobs[0]?.count || 0);
-    if (runningCount >= entitlements.maxConcurrencyUser) {
-      throw new AppError(
-        'Concurrency limit reached for tier',
-        429,
-        TIER_ERROR_CODES.CONCURRENCY_LIMIT,
-        { tier: entitlements.tierKey, limit: entitlements.maxConcurrencyUser }
-      );
-    }
 
+    let monitorLastRunAt: Date | null = null;
     if (data.monitorId) {
       const monitor = await db.query.monitors.findFirst({
         where: and(eq(schema.monitors.id, data.monitorId), eq(schema.monitors.userId, userId))
       });
       if (!monitor) throw new NotFoundError('Monitor not found');
-
-      if (monitor.lastRunAt) {
-        const lastRunAtMs = new Date(monitor.lastRunAt).getTime();
-        const elapsedSec = (Date.now() - lastRunAtMs) / 1000;
-        if (elapsedSec < entitlements.refreshIntervalFloorSeconds) {
-          throw new AppError(
-            'Refresh interval floor not met for tier',
-            429,
-            TIER_ERROR_CODES.REFRESH_INTERVAL,
-            { tier: entitlements.tierKey, minIntervalSec: entitlements.refreshIntervalFloorSeconds, lastRunAt: monitor.lastRunAt }
-          );
-        }
-      }
+      monitorLastRunAt = monitor.lastRunAt ?? null;
     }
 
     const marketplaceKey = ['facebook', 'vinted', 'ebay', 'gumtree'].includes(data.source)
       ? (data.source as 'facebook' | 'vinted' | 'ebay' | 'gumtree')
       : 'ebay';
-    const tierKey = entitlements.tierKey;
-    const dayKey = new Date().toISOString().slice(0, 10);
+    const dayKey = now.toISOString().slice(0, 10);
     const telemetryRow = await db.query.usageTelemetry.findFirst({
       where: and(
         eq(schema.usageTelemetry.userId, userId),
@@ -121,45 +92,79 @@ export const jobsService = {
       )
     });
 
-    const recentTelemetry = {
-      fullRuns: telemetryRow?.fullRuns ?? 0,
-      partialRuns: telemetryRow?.partialRuns ?? 0,
-      signalChecks: telemetryRow?.signalChecks ?? 0,
-      proxyGbEstimated: telemetryRow?.proxyGbEstimated ?? 0,
-      cooldownUntil: telemetryRow?.cooldownUntil ?? null,
-    };
+    const usageTelemetry = telemetryRow ? {
+      fullRuns: telemetryRow.fullRuns,
+      partialRuns: telemetryRow.partialRuns,
+      signalChecks: telemetryRow.signalChecks,
+      proxyGbEstimated: telemetryRow.proxyGbEstimated,
+      marketplace: telemetryRow.marketplace as Marketplace,
+    } : null;
 
-    const enforcementDecision = evaluateEnforcement({
+    const enforcementDecision = evaluateEnforcementGate({
       userId,
-      tier: tierKey,
-      marketplace: marketplaceKey,
-      requestedMode: 'FULL',
-      now: new Date(),
-      recentTelemetry,
-    });
-    const enforcementDecisionWithEntitlements = {
-      ...enforcementDecision,
-      audit: {
-        ...enforcementDecision.audit,
-        entitlementsSnapshot: entitlements,
+      entitlements,
+      usageTelemetry,
+      jobContext: {
+        runningJobs: runningCount,
+        monitorLastRunAt,
+        now,
       },
-    };
+    });
 
-    if (!enforcementDecisionWithEntitlements.allowed) {
-      await recordEnforcementEvent(db, schema, {
+    const enforcementDecisionLabel = enforcementDecision.enforcement_mode === 'BLOCKED'
+      ? 'BLOCK'
+      : enforcementDecision.enforcement_mode === 'THROTTLED'
+        ? 'THROTTLE'
+        : 'ALLOW';
+
+    if (!enforcementDecision.allowed) {
+      await recordEnforcementEventIfNeeded(db, schema, {
         userId,
         marketplace: data.source,
-        tier: tierKey,
+        tier: entitlements?.tierKey || 'unknown',
         jobId: null,
-        decision: enforcementDecisionWithEntitlements,
+        enforcement_mode: enforcementDecision.enforcement_mode,
+        decision: enforcementDecisionLabel,
+        reason_code: enforcementDecision.reason_code,
+        violated_limit: enforcementDecision.violated_limit,
+        suggested_action: enforcementDecision.suggested_action,
+        snapshot: enforcementDecision.snapshot,
       });
+      if (enforcementDecision.reason_code === 'ENTITLEMENTS_MISSING') {
+        throw new AppError(
+          'Entitlements snapshot missing',
+          403,
+          'ENTITLEMENTS_MISSING'
+        );
+      }
       throw new AppError(
         'Enforcement blocked request',
         429,
-        enforcementDecisionWithEntitlements.reason_code,
-        { nextAllowedAt: enforcementDecisionWithEntitlements.next_allowed_at || null }
+        'ENFORCEMENT_BLOCKED',
+        {
+          reason: enforcementDecision.reason_code,
+          violated_limit: enforcementDecision.violated_limit || null,
+        }
       );
     }
+
+    if (!entitlements) {
+      throw new AppError(
+        'Entitlements snapshot missing',
+        403,
+        'ENTITLEMENTS_MISSING'
+      );
+    }
+
+    if (!usageTelemetry) {
+      throw new AppError(
+        'Usage telemetry snapshot missing',
+        429,
+        'ENFORCEMENT_BLOCKED'
+      );
+    }
+
+    const tierKey = entitlements.tierKey;
 
     // 1. Persist Job Record
     const [job] = await db.insert(schema.jobs).values({
@@ -191,16 +196,19 @@ export const jobsService = {
       meta: {
         userId,
         attempt: 1,
-        enforcementMode: enforcementDecisionWithEntitlements.mode,
-        enforcementDecision: enforcementDecisionWithEntitlements.mode === 'BLOCK'
-          ? 'DENY'
-          : enforcementDecisionWithEntitlements.audit.degrade_path.length > 1
-            ? 'DOWNGRADE'
-            : 'ALLOW',
-        enforcementReason: enforcementDecisionWithEntitlements.reason_code,
-        enforcementAudit: enforcementDecisionWithEntitlements.audit,
       }
     };
+
+    if (enforcementDecision.enforcement_mode === 'THROTTLED') {
+      payload.meta.enforcementReason = enforcementDecision.reason_code;
+      payload.meta.enforcementAudit = {
+        enforcement_mode: enforcementDecision.enforcement_mode,
+        decision: enforcementDecisionLabel,
+        violated_limit: enforcementDecision.violated_limit || null,
+        suggested_action: enforcementDecision.suggested_action || null,
+        snapshot: enforcementDecision.snapshot,
+      };
+    }
 
     const canaryMeta = demoContext.active
       ? { canary: false, rampPercent: 0 }
@@ -217,12 +225,25 @@ export const jobsService = {
 
     logger.info('Job canary assignment', { jobId: job.id, source: data.source, ...canaryMeta });
 
+    await recordEnforcementEventIfNeeded(db, schema, {
+      userId,
+      marketplace: data.source,
+      tier: tierKey,
+      jobId: job.id,
+      enforcement_mode: enforcementDecision.enforcement_mode,
+      decision: enforcementDecisionLabel,
+      reason_code: enforcementDecision.reason_code,
+      violated_limit: enforcementDecision.violated_limit,
+      suggested_action: enforcementDecision.suggested_action,
+      snapshot: enforcementDecision.snapshot,
+    });
+
     const telemetrySnapshot = {
       proxyUsageRatio: entitlements.maxProxyGbPerDay > 0
-        ? recentTelemetry.proxyGbEstimated / entitlements.maxProxyGbPerDay
+        ? usageTelemetry.proxyGbEstimated / entitlements.maxProxyGbPerDay
         : 0,
       fullScrapeRatio: entitlements.maxDailyRuns > 0
-        ? recentTelemetry.fullRuns / entitlements.maxDailyRuns
+        ? usageTelemetry.fullRuns / entitlements.maxDailyRuns
         : 0,
     };
     const tuning = resolveTuning({
@@ -251,19 +272,15 @@ export const jobsService = {
 
     payload.meta.tuning = tuning;
 
-    await recordEnforcementEvent(db, schema, {
-      userId,
-      marketplace: data.source,
-      tier: tierKey,
-      jobId: job.id,
-      decision: enforcementDecisionWithEntitlements,
+    const increment = buildTelemetryIncrement({
+      marketplace: marketplaceKey,
+      action: 'full_scrape',
     });
-
-    const deltaFull = enforcementDecisionWithEntitlements.counters_delta.full ? 1 : 0;
-    const deltaPartial = enforcementDecisionWithEntitlements.counters_delta.partial ? 1 : 0;
-    const deltaSignal = enforcementDecisionWithEntitlements.counters_delta.signal ? 1 : 0;
-    const deltaProxy = enforcementDecisionWithEntitlements.counters_delta.proxy_gb || 0;
-    const deltaCost = 0;
+    const deltaFull = increment.fullScrapes;
+    const deltaPartial = increment.partialFetches;
+    const deltaSignal = increment.signalChecks;
+    const deltaProxy = increment.proxyGbEstimated;
+    const deltaCost = increment.costUsdEstimated;
     const lastResetAt = new Date(`${dayKey}T00:00:00.000Z`);
 
     await db.insert(schema.usageTelemetry)
