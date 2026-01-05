@@ -43,3 +43,9 @@ export const PipelineResultEnvelopeSchema = z.object({
 });
 
 export type PipelineResultEnvelope = z.infer<typeof PipelineResultEnvelopeSchema>;
+
+// PIPELINE_HASH_REFS_V1 (contracts only; refs not blobs)
+export interface PipelineHashRefs {
+  inputHash?: string;   // deterministic hash of raw inputs (canonicalized)
+  outputHash?: string;  // deterministic hash of final enriched output (canonicalized)
+}

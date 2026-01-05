@@ -1,15 +1,10 @@
 import { PipelineExecutionPlan } from '@repo/types/pipeline';
 import { PipelineResultEnvelope, PipelineStepReport } from '@repo/types/pipelineResult';
 import { IdempotencyReceipt } from '@repo/types/idempotency';
-import { runStep, StepHandler } from './stepRunner';
-
-export interface PipelineExecutorConfig {
-  handlers: Partial<Record<PipelineStep['name'], StepHandler>>;
-}
+import { runStep } from './stepRunner';
+import { STEP_REGISTRY } from './stepRegistry';
 
 export class PipelineExecutor {
-  constructor(private config: PipelineExecutorConfig) {}
-
   private buildReceipt(plan: PipelineExecutionPlan, startedAt: string, finishedAt: string): IdempotencyReceipt {
     const idempotencyKey = `pipeline:${plan.runId}`;
     return {
@@ -28,7 +23,7 @@ export class PipelineExecutor {
     const stepReports: PipelineStepReport[] = [];
 
     for (const step of plan.graph.steps) {
-      const handler = this.config.handlers[step.name];
+      const handler = STEP_REGISTRY[step.name];
       const report = await runStep(step, plan, handler);
       stepReports.push(report);
     }
@@ -36,9 +31,7 @@ export class PipelineExecutor {
     const finishedAt = new Date().toISOString();
     const receipt = this.buildReceipt(plan, startedAt, finishedAt);
 
-    const decision = stepReports.some((report) => report.status === 'FAILED')
-      ? 'FAILED_STRICT'
-      : 'SUCCESS';
+    const decision = stepReports.some((report) => report.status === 'FAILED') ? 'FAILED_STRICT' : 'SUCCESS';
 
     return {
       runId: plan.runId,

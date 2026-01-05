@@ -8,6 +8,8 @@ export const PipelineTriggerSchema = z.enum([
   'MANUAL_REPLAY',
   'SCHEDULED_REFRESH',
   'BACKFILL',
+  'REPLAY_SAME',
+  'RESCORE_ONLY',
 ]);
 
 export type PipelineTrigger = z.infer<typeof PipelineTriggerSchema>;
@@ -19,6 +21,9 @@ export const PipelineExecutionPlanSchema = z.object({
   startAtStep: PipelineStepNameSchema.optional(),
   stopAfterStep: PipelineStepNameSchema.optional(),
   strict: z.boolean().default(true),
+  pipelineVersion: z.string(),
+  replayMode: z.enum(['REPLAY_SAME', 'RESCORE_ONLY']).optional(),
+  replayOfRunId: z.string().optional(),
 });
 
 export type PipelineExecutionPlan = z.infer<typeof PipelineExecutionPlanSchema>;
@@ -26,3 +31,12 @@ export type PipelineExecutionPlan = z.infer<typeof PipelineExecutionPlanSchema>;
 export type PipelineExecutor = {
   execute: (plan: PipelineExecutionPlan) => Promise<unknown>;
 };
+
+export const ReplayModeSchema = z.enum(['REPLAY_SAME', 'RESCORE_ONLY']);
+export type ReplayMode = z.infer<typeof ReplayModeSchema>;
+
+export interface PipelineReplayMeta {
+  pipelineVersion: string;
+  replayMode?: ReplayMode;
+  replayOfRunId?: string;
+}

@@ -21,3 +21,23 @@
 ## Publications
 - This schema feeds into `publication.ts`, `alertDsl.ts`, and `arbitrage.ts` contracts as immutable facts.
 No runtime behavior is defined here.
+
+## Explainability contract
+- `explain.model = "RULES_V1"` documents the deterministic rules that produced the numbers.
+- `explain.signals` lists each signal (freshness, rarity, demand) with value and a human-friendly label.
+- `explain.scoreBreakdown` shows how weights combine into the final 0..100 score.
+- `explain.confidence` reports input quality (title, price, images, location).
+- `explain.warnings` may note missing fields without triggering alerts.
+
+## Provenance meta
+- `provenance.meta.pipelineVersion` pins the running pipeline.
+- `stepVersions` tracks versions of each stage.
+- `derivedFrom` records `listingHash` + `idempotencyKey` so replays stay deterministic.
+
+## Explainability (Facts Only)
+`ENRICHED_LISTING.explain` is a UI-safe receipt:
+- signals computed (name/value/label)
+- score breakdown (components + contributions)
+- no thresholds, no alert logic, no recommendations
+
+See `docs/EXPLAINABILITY.md`.

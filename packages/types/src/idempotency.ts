@@ -35,3 +35,10 @@ export const IdempotencyKeyInputsSchema = z.object({
 });
 
 export type IdempotencyKeyInputs = z.infer<typeof IdempotencyKeyInputsSchema>;
+
+// IDEMPOTENCY_HASH_CONTRACT_V1 (contracts only)
+export interface IdempotencyHashes {
+  inputHash: string;   // hash(raw + meta + pinned versions)
+  outputHash?: string; // hash(final output), optional until FINALIZE exists
+  pipelineVersion: string;
+}
