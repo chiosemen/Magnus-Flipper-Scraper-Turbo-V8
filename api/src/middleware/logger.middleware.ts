@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 export const loggerMiddleware = createMiddleware(async (c, next) => {
   const requestId = c.req.header('X-Request-ID') || randomUUID();
   c.set('requestId', requestId); // Assuming we extend context later or just rely on this scope
+  c.header('X-Request-ID', requestId);
 
   const start = Date.now();
   const { method, path } = c.req;

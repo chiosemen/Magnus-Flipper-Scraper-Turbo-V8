@@ -44,6 +44,14 @@ describe('API endpoints (integration)', () => {
     expect(res.body.status).toBe('ok');
   });
 
+  it('GET /api/version returns build metadata', async () => {
+    const res = await client.get('/api/version');
+    expect(res.status).toBe(200);
+    expect(res.body.service).toBe('api');
+    expect(res.body.gitSha).toBeDefined();
+    expect(res.body.buildTime).toBeDefined();
+  });
+
   it('POST /api/auth/verify creates or returns user', async () => {
     const res = await client.post('/api/auth/verify').set(authHeader);
     expect(res.status).toBe(200);

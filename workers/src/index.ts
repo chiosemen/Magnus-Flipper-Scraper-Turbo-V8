@@ -10,6 +10,7 @@ import { assertDemoModeAllowsExecution, getDemoRateOverrides, DemoModeError, DEM
 import { assertConcurrencyWithinLimits, ConcurrencyBackoffError } from './services/concurrency.service';
 import { DeltaCheckService } from './services/deltaCheck.service';
 import { StatusService } from './services/status.service';
+import { validateWorkerEnv } from './lib/env';
 
 const app = new Hono();
 const router = new JobRouter();
@@ -106,6 +107,13 @@ export const workerApp = app;
 export const jobRouter = router;
 
 if (process.env.NODE_ENV !== 'test') {
+  try {
+    validateWorkerEnv();
+  } catch (error) {
+    logger.error('Worker env validation failed', error as Error);
+    (process as any).exit(1);
+  }
+
   const port = Number(process.env.PORT) || 8080;
   logger.info(`Worker listening on port ${port}`);
 

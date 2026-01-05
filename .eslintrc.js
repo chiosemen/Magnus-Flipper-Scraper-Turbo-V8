@@ -1,6 +1,6 @@
 module.exports = {
   root: true,
-  extends: ['@repo/eslint-config-base'],
+  extends: ['@repo/config/eslint'],
   rules: {
     'no-restricted-imports': [
       'error',

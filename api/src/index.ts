@@ -1,6 +1,14 @@
 import { serve } from '@hono/node-server';
 import app from './app';
 import { logger } from '@repo/logger';
+import { validateApiEnv } from './lib/env';
+
+try {
+  validateApiEnv();
+} catch (error) {
+  logger.error('API env validation failed', error as Error);
+  (process as any).exit(1);
+}
 
 const port = Number(process.env.PORT) || 8080;
 

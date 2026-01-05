@@ -2,9 +2,12 @@ import React, { useEffect, PropsWithChildren } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/layout/Layout';
+import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
 import { Admin } from './pages/Admin';
+import { Listings } from './pages/Listings';
+import { Alerts } from './pages/Alerts';
 import { useAuthStore } from './stores/authStore';
 import { Loader2 } from 'lucide-react';
 
@@ -43,9 +46,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
-          
-          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route path="/listings" element={<Listings />} />
+          <Route path="/alerts" element={<Alerts />} />
+
+          {/* Protected app routes */}
+          <Route path="/app" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Dashboard />} />
             <Route path="deals" element={<div className="p-6 text-slate-400">Deals List (To be implemented)</div>} />
             <Route path="monitors" element={<div className="p-6 text-slate-400">Monitors List (To be implemented)</div>} />
@@ -54,7 +62,7 @@ function App() {
             <Route path="settings" element={<div className="p-6 text-slate-400">Settings (To be implemented)</div>} />
             <Route path="admin" element={<Admin />} />
           </Route>
-          
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
