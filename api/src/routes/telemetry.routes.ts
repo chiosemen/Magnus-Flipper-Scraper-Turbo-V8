@@ -9,7 +9,7 @@ import type {
   TelemetryUsageResponse,
   TelemetryUsageSnapshot,
   TelemetryEntitlementsSnapshot,
-} from '@repo/types/src/telemetry';
+} from '@repo/types';
 
 type Env = {
   Variables: {
