@@ -67,7 +67,7 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1(@types/node@22.19.3)(@vitest/ui@1.6.1)(jsdom@24.1.3)
 
-  apps/api:
+  api:
     dependencies:
       '@google-cloud/tasks':
         specifier: ^5.1.0
@@ -78,15 +78,21 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.2.2
         version: 0.2.2(hono@4.11.3)(zod@3.25.76)
+      '@repo/billing':
+        specifier: workspace:*
+        version: link:../packages/billing
+      '@repo/core':
+        specifier: workspace:*
+        version: link:../packages/core
       '@repo/database':
         specifier: workspace:*
-        version: link:../../packages/database
+        version: link:../packages/database
       '@repo/logger':
         specifier: workspace:*
-        version: link:../../packages/logger
+        version: link:../packages/logger
       '@repo/types':
         specifier: workspace:*
-        version: link:../../packages/types
+        version: link:../packages/types
       drizzle-orm:
         specifier: ^0.30.10
         version: 0.30.10(@opentelemetry/api@1.9.0)(@types/react@18.3.27)(postgres@3.4.7)(react@19.2.3)
@@ -183,20 +189,79 @@ importers:
         specifier: ^5.2.12
         version: 5.4.21(@types/node@22.19.3)
 
-  apps/worker:
+  packages/billing:
+    devDependencies:
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
+  packages/config:
+    devDependencies:
+      eslint:
+        specifier: ^8.57.0
+        version: 8.57.1
+      tailwindcss:
+        specifier: ^3.4.1
+        version: 3.4.19(tsx@4.21.0)
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
+  packages/core:
+    devDependencies:
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
+  packages/database:
+    dependencies:
+      drizzle-orm:
+        specifier: ^0.30.10
+        version: 0.30.10(@opentelemetry/api@1.9.0)(@types/react@18.3.27)(postgres@3.4.7)(react@19.2.3)
+      postgres:
+        specifier: ^3.4.4
+        version: 3.4.7
+    devDependencies:
+      '@types/node':
+        specifier: ^20.12.7
+        version: 20.19.27
+      drizzle-kit:
+        specifier: ^0.21.4
+        version: 0.21.4
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
+  packages/logger:
+    devDependencies:
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
+  packages/types:
+    dependencies:
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
+  workers:
     dependencies:
       '@hono/node-server':
         specifier: ^1.11.0
         version: 1.19.7(hono@4.11.3)
       '@repo/database':
         specifier: workspace:*
-        version: link:../../packages/database
+        version: link:../packages/database
       '@repo/logger':
         specifier: workspace:*
-        version: link:../../packages/logger
+        version: link:../packages/logger
       '@repo/types':
         specifier: workspace:*
-        version: link:../../packages/types
+        version: link:../packages/types
       axios:
         specifier: ^1.6.8
         version: 1.13.2
@@ -240,53 +305,6 @@ importers:
       tsx:
         specifier: ^4.11.0
         version: 4.21.0
-      typescript:
-        specifier: ^5.4.5
-        version: 5.9.3
-
-  packages/config:
-    devDependencies:
-      eslint:
-        specifier: ^8.57.0
-        version: 8.57.1
-      tailwindcss:
-        specifier: ^3.4.1
-        version: 3.4.19(tsx@4.21.0)
-      typescript:
-        specifier: ^5.4.5
-        version: 5.9.3
-
-  packages/database:
-    dependencies:
-      drizzle-orm:
-        specifier: ^0.30.10
-        version: 0.30.10(@opentelemetry/api@1.9.0)(@types/react@18.3.27)(postgres@3.4.7)(react@19.2.3)
-      postgres:
-        specifier: ^3.4.4
-        version: 3.4.7
-    devDependencies:
-      '@types/node':
-        specifier: ^20.12.7
-        version: 20.19.27
-      drizzle-kit:
-        specifier: ^0.21.4
-        version: 0.21.4
-      typescript:
-        specifier: ^5.4.5
-        version: 5.9.3
-
-  packages/logger:
-    devDependencies:
-      typescript:
-        specifier: ^5.4.5
-        version: 5.9.3
-
-  packages/types:
-    dependencies:
-      zod:
-        specifier: ^3.23.8
-        version: 3.25.76
-    devDependencies:
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
