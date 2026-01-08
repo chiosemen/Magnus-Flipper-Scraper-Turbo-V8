@@ -59,6 +59,26 @@
   "pnpm": {
     "overrides": {
       "drizzle-orm": "workspace:*"
+    },
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "mysql2",
+        "better-sqlite3",
+        "sqlite3",
+        "@types/better-sqlite3",
+        "@cloudflare/workers-types",
+        "@aws-sdk/client-rds-data",
+        "@libsql/client",
+        "@planetscale/database",
+        "@vercel/postgres",
+        "@xata.io/client",
+        "@neondatabase/serverless",
+        "expo-sqlite",
+        "@op-engineering/op-sqlite",
+        "bun-types",
+        "sql.js",
+        "@types/sql.js"
+      ]
     }
   }
 }
