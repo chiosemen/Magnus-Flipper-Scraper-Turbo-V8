@@ -11,12 +11,12 @@ import { assertMarketplaceWithinLimits } from './marketplaceRate.service';
 import { assertDemoModeAllowsDispatch, getDemoRateOverrides } from './demoMode.service';
 import { recordEnforcementEvent, resolveTuning } from '@repo/core';
 import { TierKey } from '@repo/billing';
-import type { Marketplace } from '../../../packages/economics/src/tieredRefresh.model';
-import { evaluateEnforcementGate } from '../../../packages/telemetry/src/enforcementGate';
+import type { Marketplace } from '@repo/economics';
 import {
+  evaluateEnforcementGate,
   buildTelemetryIncrement,
   recordEnforcementEventIfNeeded,
-} from '../../../packages/telemetry/src/costTelemetry';
+} from '@repo/telemetry';
 
 type EntitlementsSnapshot = {
   tierKey: TierKey;
