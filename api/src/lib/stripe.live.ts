@@ -9,6 +9,6 @@ export const getStripeLiveClient = () => {
   if (!secretKey) {
     throw new ValidationError('STRIPE_LIVE_SECRET_KEY is not set');
   }
-  stripeLiveClient = new Stripe(secretKey, { apiVersion: '2024-04-10' });
+  stripeLiveClient = new Stripe(secretKey);
   return stripeLiveClient;
 };

@@ -1,10 +1,10 @@
-import type { Marketplace } from '../../economics/src/tieredRefresh.model';
+import type { Marketplace } from '@repo/economics';
 import {
   MARKETPLACE_COST_MULTIPLIERS,
   PROXY_GB_COST_USD,
   REFRESH_COST_USD_PER_RUN,
   TIER_COST_CEILING,
-} from '../../economics/src/tieredRefresh.model';
+} from '@repo/economics';
 
 export type TierKey = 'free' | 'basic' | 'pro' | 'elite' | 'enterprise';
 export type GuardrailAction = 'SIGNAL_ONLY' | 'PARTIAL_FETCH' | 'FULL_SCRAPE';
