@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "description": "Scraper Dashboard with Tests",
   "private": true,
-  "workspaces": ["apps/web", "api", "workers", "packages/*"],
+  "workspaces": [
+    "apps/web",
+    "api",
+    "workers",
+    "packages/*"
+  ],
   "type": "module",
   "scripts": {
     "start": "vite",
@@ -34,6 +39,7 @@
     "recharts": "^3.6.0"
   },
   "devDependencies": {
+    "@types/node": "^20.12.12",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^14.2.1",
     "@vitejs/plugin-react": "^4.2.1",
@@ -49,5 +55,30 @@
     "msw": "^2.3.0",
     "pg-mem": "^2.8.1",
     "@playwright/test": "^1.44.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "workspace:*"
+    },
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "mysql2",
+        "better-sqlite3",
+        "sqlite3",
+        "@types/better-sqlite3",
+        "@cloudflare/workers-types",
+        "@aws-sdk/client-rds-data",
+        "@libsql/client",
+        "@planetscale/database",
+        "@vercel/postgres",
+        "@xata.io/client",
+        "@neondatabase/serverless",
+        "expo-sqlite",
+        "@op-engineering/op-sqlite",
+        "bun-types",
+        "sql.js",
+        "@types/sql.js"
+      ]
+    }
   }
 }

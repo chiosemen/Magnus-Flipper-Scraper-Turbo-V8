@@ -11,5 +11,12 @@
   },
   "devDependencies": {
     "typescript": "^5.4.5"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.30.10",
+    "@repo/economics": "workspace:*"
   }
 }
