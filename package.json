@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "description": "Scraper Dashboard with Tests",
   "private": true,
-  "workspaces": ["apps/web", "api", "workers", "packages/*"],
+  "workspaces": [
+    "apps/web",
+    "api",
+    "workers",
+    "packages/*"
+  ],
   "type": "module",
   "scripts": {
     "start": "vite",
@@ -50,5 +55,10 @@
     "msw": "^2.3.0",
     "pg-mem": "^2.8.1",
     "@playwright/test": "^1.44.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "workspace:*"
+    }
   }
 }
