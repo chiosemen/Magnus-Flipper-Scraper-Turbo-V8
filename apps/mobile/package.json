@@ -22,7 +22,8 @@
     "expo-constants": "~17.0.0",
     "nativewind": "^4.1.23",
     "tailwindcss": "^3.4.17",
-    "@repo/types": "workspace:*"
+    "@repo/types": "workspace:*",
+    "@react-native-async-storage/async-storage": "^2.1.0"
   },
   "devDependencies": {
     "@types/react": "~18.3.12",

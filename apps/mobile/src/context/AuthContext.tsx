@@ -5,16 +5,16 @@ import {
   onAuthStateChanged,
   User,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth } from '@/config/firebase';
 
 /**
  * Auth Context
  *
  * ARCHITECTURE:
- * - Firebase Client SDK for auth
- * - Auto-syncs auth state
- * - Exposes user, signIn, signOut, isLoading
- * - ID token managed internally (accessed via getIdToken())
+ * - Firebase Client SDK for auth with AsyncStorage persistence
+ * - Auto-syncs auth state via onAuthStateChanged
+ * - Exposes: user (User | null), isLoading (boolean), signIn (func), signOut (func)
+ * - ID token managed internally (accessed via user.getIdToken())
  */
 
 type AuthContextType = {

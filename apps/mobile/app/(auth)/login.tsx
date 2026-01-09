@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 
 /**
- * Login Screen
+ * Login Screen - Minimal UI
  *
  * ARCHITECTURE:
- * - Uses AuthContext for authentication
- * - No client-side validation (validation on server)
- * - Redirects to tabs on successful login
+ * - Uses signInWithEmailAndPassword via AuthContext
+ * - Email input, password input, Sign In button
+ * - Auth guard handles navigation after successful login
  */
 
 export default function LoginScreen() {
-  const router = useRouter();
   const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,8 +26,7 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await signIn(email, password);
-      // AuthContext will update user state, triggering navigation
-      router.replace('/(tabs)/deals');
+      // Auth guard will handle navigation automatically
     } catch (error) {
       Alert.alert(
         'Login Failed',
