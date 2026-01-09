@@ -93,9 +93,15 @@ importers:
       '@repo/database':
         specifier: workspace:*
         version: link:../packages/database
+      '@repo/economics':
+        specifier: workspace:*
+        version: link:../packages/economics
       '@repo/logger':
         specifier: workspace:*
         version: link:../packages/logger
+      '@repo/telemetry':
+        specifier: workspace:*
+        version: link:../packages/telemetry
       '@repo/types':
         specifier: workspace:*
         version: link:../packages/types
@@ -221,6 +227,16 @@ importers:
         version: 5.9.3
 
   packages/core:
+    dependencies:
+      '@repo/billing':
+        specifier: workspace:*
+        version: link:../billing
+      '@repo/economics':
+        specifier: workspace:*
+        version: link:../economics
+      '@repo/telemetry':
+        specifier: workspace:*
+        version: link:../telemetry
     devDependencies:
       typescript:
         specifier: ^5.4.5
@@ -258,6 +274,13 @@ importers:
         version: 5.9.3
 
   packages/telemetry:
+    dependencies:
+      '@repo/billing':
+        specifier: workspace:*
+        version: link:../billing
+      '@repo/economics':
+        specifier: workspace:*
+        version: link:../economics
     devDependencies:
       typescript:
         specifier: ^5.4.5

@@ -9,6 +9,10 @@
       "default": "./dist/index.js"
     }
   },
+  "dependencies": {
+    "@repo/economics": "workspace:*",
+    "@repo/billing": "workspace:*"
+  },
   "scripts": {
     "build": "tsc"
   },
