@@ -1,11 +1,12 @@
 import { Deal, Monitor, User } from '@repo/types';
 import { logger } from '@repo/logger';
 import { db, schema } from '../lib/db';
+import { eq } from 'drizzle-orm';
 
 export const notificationsService = {
   async sendDealAlert(userId: string, deal: Deal, monitor: Monitor) {
     const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.id, userId)
+      where: eq(schema.users.id, userId)
     });
 
     if (!user) return;

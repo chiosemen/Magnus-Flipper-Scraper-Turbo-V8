@@ -180,11 +180,13 @@ app.post('/webhook', async (c) => {
         break;
       }
 
-      const currentPeriodStart = subscription.current_period_start
-        ? new Date(subscription.current_period_start * 1000)
+      // Type assertion: Stripe SDK types may be incomplete - these properties exist in the API
+      const stripeSubscription = subscription as any;
+      const currentPeriodStart = stripeSubscription.current_period_start
+        ? new Date(stripeSubscription.current_period_start * 1000)
         : null;
-      const currentPeriodEnd = subscription.current_period_end
-        ? new Date(subscription.current_period_end * 1000)
+      const currentPeriodEnd = stripeSubscription.current_period_end
+        ? new Date(stripeSubscription.current_period_end * 1000)
         : null;
 
       await applyStripeTierChange({

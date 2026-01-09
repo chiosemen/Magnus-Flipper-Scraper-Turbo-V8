@@ -22,10 +22,13 @@ export const STRIPE_PRICE_ENV = {
   enterprise: 'STRIPE_PRICE_ID_ENTERPRISE',
 } as const;
 
+// Paid tiers only - 'free' tier has no Stripe price ID
+type PaidTierKey = Exclude<TierKey, 'free'>;
+
 export const buildStripePlanMap = (
   env: Record<string, string | undefined> = process.env
 ): Record<StripePlanId, StripePlanDefinition> => {
-  const tiers: TierKey[] = ['basic', 'pro', 'elite', 'enterprise'];
+  const tiers: PaidTierKey[] = ['basic', 'pro', 'elite', 'enterprise'];
   const map: Record<StripePlanId, StripePlanDefinition> = {};
 
   tiers.forEach((tier) => {

@@ -19,7 +19,7 @@ const getStripeMode = (): StripeMode => {
   }
 
   if (mode === 'live' && process.env.NODE_ENV !== 'production') {
-    logger.error('Stripe live mode is blocked outside production', { nodeEnv: process.env.NODE_ENV });
+    logger.error('Stripe live mode is blocked outside production', undefined, { nodeEnv: process.env.NODE_ENV });
     throw new ValidationError('Stripe live mode is blocked outside production');
   }
 

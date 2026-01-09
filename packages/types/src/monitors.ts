@@ -69,7 +69,9 @@ export const CreateMonitorSchema = MonitorSchema.omit({
 });
 export type CreateMonitor = z.infer<typeof CreateMonitorSchema>;
 
-export const UpdateMonitorSchema = CreateMonitorSchema.partial().extend({
-  id: z.string().uuid(),
+export const UpdateMonitorSchema = MonitorSchema.partial().omit({
+  id: true,
+  userId: true,      // Can't update userId
+  createdAt: true,   // Can't update createdAt
 });
 export type UpdateMonitor = z.infer<typeof UpdateMonitorSchema>;

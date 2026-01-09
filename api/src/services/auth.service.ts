@@ -58,8 +58,25 @@ export const authService = {
   },
 
   async updateUserProfile(userId: string, data: Partial<User>) {
+    // Normalize date fields for Drizzle ORM
+    const normalizeDate = (value: Date | string | number | undefined | null): Date | null | undefined => {
+      if (value === null) return null;
+      if (value === undefined) return undefined;
+      if (value instanceof Date) return value;
+      return new Date(value);
+    };
+
+    const normalizedData = {
+      ...data,
+      createdAt: data.createdAt ? normalizeDate(data.createdAt) : undefined,
+      tierExpiresAt: data.tierExpiresAt ? normalizeDate(data.tierExpiresAt) : undefined,
+      quotaResetAt: data.quotaResetAt ? normalizeDate(data.quotaResetAt) : undefined,
+      lastLoginAt: data.lastLoginAt ? normalizeDate(data.lastLoginAt) : undefined,
+      updatedAt: new Date(),
+    };
+
     const [updated] = await db.update(schema.users)
-      .set({ ...data, updatedAt: new Date() })
+      .set(normalizedData as any)
       .where(eq(schema.users.id, userId))
       .returning();
     return updated as unknown as User;

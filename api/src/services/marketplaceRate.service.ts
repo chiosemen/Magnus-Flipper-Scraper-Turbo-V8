@@ -50,13 +50,16 @@ const loadConfig = async (source: string): Promise<MarketplaceRateConfig> => {
     return buildSafeConfig();
   }
 
+  // Type assertion: After validation, target is guaranteed to be a valid config object
+  const validTarget = target as NonNullable<typeof target>;
+
   return {
-    enabled: target.enabled,
-    maxConcurrency: Number(target.maxConcurrency),
-    jobsPerMinute: Number(target.jobsPerMinute),
-    errorThreshold: Number(target.errorThreshold),
-    cooldownSeconds: Number(target.cooldownSeconds),
-    cooldownUntil: target.cooldownUntil ? new Date(target.cooldownUntil) : null,
+    enabled: validTarget.enabled,
+    maxConcurrency: Number(validTarget.maxConcurrency),
+    jobsPerMinute: Number(validTarget.jobsPerMinute),
+    errorThreshold: Number(validTarget.errorThreshold),
+    cooldownSeconds: Number(validTarget.cooldownSeconds),
+    cooldownUntil: validTarget.cooldownUntil ? new Date(validTarget.cooldownUntil) : null,
   };
 };
 

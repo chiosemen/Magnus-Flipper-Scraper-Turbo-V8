@@ -9,6 +9,11 @@
       "default": "./dist/index.js"
     }
   },
+  "dependencies": {
+    "@repo/telemetry": "workspace:*",
+    "@repo/economics": "workspace:*",
+    "@repo/billing": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.4.5"
   },

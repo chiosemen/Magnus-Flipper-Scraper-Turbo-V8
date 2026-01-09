@@ -88,8 +88,10 @@ export const CreateDealSchema = DealSchema.omit({
 });
 export type CreateDeal = z.infer<typeof CreateDealSchema>;
 
-export const UpdateDealSchema = DealSchema.partial().extend({
-  id: z.string().uuid(),
+export const UpdateDealSchema = DealSchema.partial().omit({
+  id: true,
+  userId: true,      // Can't update userId
+  createdAt: true,   // Can't update createdAt
 });
 export type UpdateDeal = z.infer<typeof UpdateDealSchema>;
 

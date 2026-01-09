@@ -159,7 +159,11 @@ export const evaluatePricingGuardrails = (input: {
     };
   }
 
-  if (usageSnapshot.dailyRuns >= entitlements.maxDailyRuns) {
+  // Type assertion: After validation checks above, these are guaranteed non-null
+  const validEntitlements = entitlements as EntitlementsSnapshot;
+  const validUsageSnapshot = usageSnapshot as PricingUsageSnapshot;
+
+  if (validUsageSnapshot.dailyRuns >= validEntitlements.maxDailyRuns) {
     return {
       decision: 'BLOCK',
       reason_code: 'MAX_DAILY_RUNS_EXCEEDED',
@@ -168,7 +172,7 @@ export const evaluatePricingGuardrails = (input: {
     };
   }
 
-  if (usageSnapshot.proxyGbToday >= entitlements.maxProxyGbPerDay) {
+  if (validUsageSnapshot.proxyGbToday >= validEntitlements.maxProxyGbPerDay) {
     return {
       decision: 'BLOCK',
       reason_code: 'MAX_PROXY_GB_EXCEEDED',
@@ -177,9 +181,9 @@ export const evaluatePricingGuardrails = (input: {
     };
   }
 
-  if (usageSnapshot.lastRunAt && isValidDate(usageSnapshot.lastRunAt)) {
-    const elapsedSec = (now.getTime() - usageSnapshot.lastRunAt.getTime()) / 1000;
-    if (elapsedSec < entitlements.refreshIntervalFloorSeconds) {
+  if (validUsageSnapshot.lastRunAt && isValidDate(validUsageSnapshot.lastRunAt)) {
+    const elapsedSec = (now.getTime() - validUsageSnapshot.lastRunAt.getTime()) / 1000;
+    if (elapsedSec < validEntitlements.refreshIntervalFloorSeconds) {
       return {
         decision: 'BLOCK',
         reason_code: 'REFRESH_INTERVAL_FLOOR',
@@ -189,7 +193,7 @@ export const evaluatePricingGuardrails = (input: {
     }
   }
 
-  if (usageSnapshot.runningJobs >= entitlements.maxConcurrencyUser) {
+  if (validUsageSnapshot.runningJobs >= validEntitlements.maxConcurrencyUser) {
     return {
       decision: 'THROTTLE',
       reason_code: 'MAX_CONCURRENCY_EXCEEDED',
@@ -198,8 +202,8 @@ export const evaluatePricingGuardrails = (input: {
     };
   }
 
-  const estimatedCost = estimateDailyCost(entitlements, usageSnapshot);
-  const tierCeiling = TIER_COST_CEILING[entitlements.tierKey];
+  const estimatedCost = estimateDailyCost(validEntitlements, validUsageSnapshot);
+  const tierCeiling = TIER_COST_CEILING[validEntitlements.tierKey];
   if (Number.isFinite(tierCeiling) && estimatedCost > tierCeiling) {
     return {
       decision: 'THROTTLE',

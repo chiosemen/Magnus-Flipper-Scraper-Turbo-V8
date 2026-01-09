@@ -17,7 +17,7 @@ type Env = {
 const app = new Hono<Env>();
 app.use('*', authMiddleware);
 
-app.get('/', zValidator('query', DealFiltersSchema.partial()), async (c) => {
+app.get('/', zValidator('query', DealFiltersSchema), async (c) => {
   const user = c.get('user');
   const filters = c.req.valid('query' as any);
   const result = await dealsService.listDeals(user.uid, filters);
@@ -31,7 +31,7 @@ app.get('/:id', validateUuidParam('id'), async (c) => {
   return c.json({ success: true, data: deal });
 });
 
-app.patch('/:id', validateUuidParam('id'), zValidator('json', UpdateDealSchema.omit({ id: true })), async (c) => {
+app.patch('/:id', validateUuidParam('id'), zValidator('json', UpdateDealSchema), async (c) => {
   const user = c.get('user');
   const dealId = c.req.param().id;
   const data = c.req.valid('json' as any);

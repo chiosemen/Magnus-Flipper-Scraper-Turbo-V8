@@ -35,7 +35,7 @@ app.post('/', zValidator('json', CreateMonitorSchema), async (c) => {
   return c.json({ success: true, data: monitor }, 201);
 });
 
-app.patch('/:id', validateUuidParam('id'), zValidator('json', UpdateMonitorSchema.omit({ id: true })), async (c) => {
+app.patch('/:id', validateUuidParam('id'), zValidator('json', UpdateMonitorSchema), async (c) => {
   const user = c.get('user');
   const data = c.req.valid('json' as any);
   const monitor = await monitorsService.updateMonitor(c.req.param().id, user.uid, data);
