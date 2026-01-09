@@ -10,18 +10,24 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0f172a"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.magnusflipper.mobile"
+      "bundleIdentifier": "com.magnusflipper.mobile",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "This app does not access your photo library",
+        "NSCameraUsageDescription": "This app does not use your camera",
+        "NSLocationWhenInUseUsageDescription": "This app does not use your location"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0f172a"
       },
-      "package": "com.magnusflipper.mobile"
+      "package": "com.magnusflipper.mobile",
+      "permissions": []
     },
     "web": {
       "bundler": "metro",
@@ -29,11 +35,26 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "sentry-expo"
     ],
     "scheme": "magnusflipper",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "API_BASE_URL": "${EXPO_PUBLIC_API_BASE_URL}",
+      "FIREBASE_API_KEY": "${EXPO_PUBLIC_FIREBASE_API_KEY}",
+      "FIREBASE_AUTH_DOMAIN": "${EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN}",
+      "FIREBASE_PROJECT_ID": "${EXPO_PUBLIC_FIREBASE_PROJECT_ID}",
+      "SENTRY_DSN": "${EXPO_PUBLIC_SENTRY_DSN}",
+      "ENV": "${EXPO_PUBLIC_ENV}"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/YOUR_PROJECT_ID"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
