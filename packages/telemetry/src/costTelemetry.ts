@@ -2,7 +2,7 @@ import {
   MARKETPLACE_PARAMS,
   Marketplace,
   TierKey,
-} from '../../economics/src/tieredRefresh.model';
+} from '@repo/economics';
 
 export type TelemetryAction = 'signal_check' | 'partial_fetch' | 'full_scrape';
 
