@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   User,
@@ -13,14 +14,16 @@ import { auth } from '@/config/firebase';
  * ARCHITECTURE:
  * - Firebase Client SDK for auth with AsyncStorage persistence
  * - Auto-syncs auth state via onAuthStateChanged
- * - Exposes: user (User | null), isLoading (boolean), signIn (func), signOut (func)
+ * - Exposes: user (User | null), isLoading (boolean), signIn, signUp, signOut
  * - ID token managed internally (accessed via user.getIdToken())
+ * - Zero business logic - Firebase Auth = identity only
  */
 
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -50,6 +53,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signUp = async (email: string, password: string) => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      // User state will be updated via onAuthStateChanged
+    } catch (error) {
+      console.error('[Auth] Sign up failed:', error);
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
@@ -64,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     isLoading,
     signIn,
+    signUp,
     signOut,
   };
 

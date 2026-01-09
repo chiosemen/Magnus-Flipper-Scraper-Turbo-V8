@@ -4,35 +4,42 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 
 /**
- * Login Screen - Minimal UI
+ * Register Screen - Minimal UI
  *
  * ARCHITECTURE:
- * - Uses signInWithEmailAndPassword via AuthContext
- * - Email input, password input, Sign In button
- * - Auth guard handles navigation after successful login
+ * - Uses createUserWithEmailAndPassword via AuthContext
+ * - Email input, password input, confirm password, Sign Up button
+ * - Auth guard handles navigation after successful registration
+ * - NO business logic - Firebase Auth = identity only
  */
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please enter email and password');
+  const handleRegister = async () => {
+    if (!email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
     setIsLoading(true);
     try {
-      await signIn(email, password);
+      await signUp(email, password);
       // Auth guard will handle navigation automatically
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert(
-        'Login Failed',
-        error instanceof Error ? error.message : 'Authentication failed'
+        'Registration Failed',
+        error.message || 'Failed to create account'
       );
     } finally {
       setIsLoading(false);
@@ -42,8 +49,8 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Magnus Flipper</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Sign up to get started</Text>
 
         <View style={styles.form}>
           <TextInput
@@ -63,26 +70,36 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            autoComplete="password"
+            autoComplete="password-new"
+            editable={!isLoading}
+          />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            autoComplete="password-new"
             editable={!isLoading}
           />
 
           <TouchableOpacity
             style={[styles.button, isLoading && styles.buttonDisabled]}
-            onPress={handleLogin}
+            onPress={handleRegister}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
+              <Text style={styles.buttonText}>Sign Up</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/register')}>
-              <Text style={styles.linkText}>Sign Up</Text>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('/login')}>
+              <Text style={styles.linkText}>Sign In</Text>
             </TouchableOpacity>
           </View>
         </View>
