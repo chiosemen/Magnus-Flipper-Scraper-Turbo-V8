@@ -506,6 +506,9 @@ importers:
       '@repo/logger':
         specifier: workspace:*
         version: link:../packages/logger
+      '@repo/telemetry':
+        specifier: workspace:*
+        version: link:../packages/telemetry
       '@repo/types':
         specifier: workspace:*
         version: link:../packages/types

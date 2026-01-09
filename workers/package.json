@@ -8,27 +8,27 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "hono": "^4.4.0",
     "@hono/node-server": "^1.11.0",
-    "@repo/database": "workspace:*",
-    "@repo/logger": "workspace:*",
-    "@repo/types": "workspace:*",
-    "apify-client": "^2.21.0",
-    "axios": "^1.6.8",
-    "cheerio": "^1.0.0-rc.12",
+    "playwright": "^1.44.0",
     "crawlee": "^3.9.2",
-    "drizzle-orm": "^0.30.10",
     "fingerprint-generator": "^2.1.43",
     "fingerprint-injector": "^2.1.43",
     "firebase-admin": "^12.1.0",
-    "hono": "^4.4.0",
-    "ioredis": "^5.4.1",
-    "playwright": "^1.44.0",
+    "drizzle-orm": "^0.30.10",
     "postgres": "^3.4.4",
-    "zod": "^3.23.8"
+    "ioredis": "^5.4.1",
+    "zod": "^3.23.8",
+    "axios": "^1.6.8",
+    "cheerio": "^1.0.0-rc.12",
+    "@repo/types": "workspace:*",
+    "@repo/database": "workspace:*",
+    "@repo/logger": "workspace:*",
+    "@repo/telemetry": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^20.12.12",
     "tsx": "^4.11.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.12"
   }
 }

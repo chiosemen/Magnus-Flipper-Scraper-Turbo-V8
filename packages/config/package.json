@@ -6,7 +6,8 @@
     "./tailwind": "./tailwind/preset.js",
     "./typescript/base": "./typescript/base.json",
     "./typescript/react": "./typescript/react.json",
-    "./typescript/node": "./typescript/node.json"
+    "./typescript/node": "./typescript/node.json",
+    "./typescript/worker": "./typescript/worker.json"
   },
   "devDependencies": {
     "typescript": "^5.4.5",

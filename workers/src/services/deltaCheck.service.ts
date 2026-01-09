@@ -1,5 +1,5 @@
 import { JobPayload } from '@repo/types';
-import { computeDeltaSignal, DeltaSignal } from '../../../packages/telemetry/src/deltaSignal';
+import { computeDeltaSignal, DeltaSignal } from '@repo/telemetry';
 import { logger } from '@repo/logger';
 
 type DeltaMeta = {
