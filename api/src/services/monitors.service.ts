@@ -77,8 +77,25 @@ export const monitorsService = {
 
   async updateMonitor(monitorId: string, userId: string, data: UpdateMonitor) {
     await this.getMonitor(monitorId, userId); // check exists
+
+    // Normalize date fields for Drizzle ORM
+    const normalizeDate = (value: Date | string | number | undefined | null): Date | null | undefined => {
+      if (value === null) return null;
+      if (value === undefined) return undefined;
+      if (value instanceof Date) return value;
+      return new Date(value);
+    };
+
+    const normalizedData = {
+      ...data,
+      lastRunAt: data.lastRunAt ? normalizeDate(data.lastRunAt) : undefined,
+      lastDealFoundAt: data.lastDealFoundAt ? normalizeDate(data.lastDealFoundAt) : undefined,
+      nextRunAt: data.nextRunAt ? normalizeDate(data.nextRunAt) : undefined,
+      updatedAt: new Date(),
+    };
+
     const [updated] = await db.update(schema.monitors)
-      .set({ ...data, updatedAt: new Date() })
+      .set(normalizedData as any)
       .where(eq(schema.monitors.id, monitorId))
       .returning();
     return updated as unknown as Monitor;

@@ -81,9 +81,18 @@ export const loggerMiddleware = createMiddleware(async (c, next) => {
       });
     }
 
-    logger[level](
-      `${method} ${routeName} ${status} - ${duration}ms [${userId}]`,
-      logContext
-    );
+    // Logger.error has different signature: error(message, error?, meta?)
+    if (level === 'error') {
+      logger.error(
+        `${method} ${routeName} ${status} - ${duration}ms [${userId}]`,
+        error,
+        logContext
+      );
+    } else {
+      logger[level](
+        `${method} ${routeName} ${status} - ${duration}ms [${userId}]`,
+        logContext
+      );
+    }
   }
 });

@@ -4,6 +4,16 @@ import { DealFilters, Deal, CreateDeal, UpdateDeal } from '@repo/types';
 import { NotFoundError, ForbiddenError } from '../utils/errors';
 import { pricingService } from './pricing.service';
 
+/**
+ * Normalizes timestamp fields (Date | string | number) to Date objects for Drizzle ORM
+ */
+const normalizeDate = (value: Date | string | number | undefined | null): Date | null | undefined => {
+  if (value === null) return null;
+  if (value === undefined) return undefined;
+  if (value instanceof Date) return value;
+  return new Date(value);
+};
+
 export const dealsService = {
   async listDeals(userId: string, filters: DealFilters) {
     const conditions = [eq(schema.deals.userId, userId)];
@@ -78,8 +88,17 @@ export const dealsService = {
   async updateDeal(dealId: string, userId: string, data: UpdateDeal) {
     const existing = await this.getDeal(dealId, userId);
 
+    // Normalize date fields for Drizzle ORM
+    const normalizedData = {
+      ...data,
+      firstSeenAt: data.firstSeenAt ? normalizeDate(data.firstSeenAt) : undefined,
+      lastSeenAt: data.lastSeenAt ? normalizeDate(data.lastSeenAt) : undefined,
+      scrapedAt: data.scrapedAt ? normalizeDate(data.scrapedAt) : undefined,
+      updatedAt: new Date(),
+    };
+
     const [updated] = await db.update(schema.deals)
-      .set({ ...data, updatedAt: new Date() })
+      .set(normalizedData as any)
       .where(eq(schema.deals.id, dealId))
       .returning();
 
@@ -102,8 +121,18 @@ export const dealsService = {
   async createDealInternal(dealData: CreateDeal) {
     // This is mostly used by workers, but included for completeness
     const score = pricingService.calculateDealScore(dealData);
+
+    // Normalize date fields for Drizzle ORM
+    const normalizedData = {
+      ...dealData,
+      firstSeenAt: normalizeDate(dealData.firstSeenAt),
+      lastSeenAt: normalizeDate(dealData.lastSeenAt),
+      scrapedAt: normalizeDate(dealData.scrapedAt),
+      dealScore: score,
+    };
+
     const [created] = await db.insert(schema.deals)
-      .values({ ...dealData, dealScore: score })
+      .values(normalizedData as any)
       .returning();
     return created;
   }
