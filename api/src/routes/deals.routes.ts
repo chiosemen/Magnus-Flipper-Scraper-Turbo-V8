@@ -5,6 +5,7 @@ import { authMiddleware } from '../middleware/auth.middleware';
 import { dealsService } from '../services/deals.service';
 import { DealFiltersSchema, UpdateDealSchema } from '@repo/types';
 import { z } from 'zod';
+import { validateUuidParam } from '../utils/validation';
 
 type Env = {
   Variables: {
@@ -23,14 +24,14 @@ app.get('/', zValidator('query', DealFiltersSchema.partial()), async (c) => {
   return c.json({ success: true, ...result });
 });
 
-app.get('/:id', async (c) => {
+app.get('/:id', validateUuidParam('id'), async (c) => {
   const user = c.get('user');
   const dealId = c.req.param().id;
   const deal = await dealsService.getDeal(dealId, user.uid);
   return c.json({ success: true, data: deal });
 });
 
-app.patch('/:id', zValidator('json', UpdateDealSchema.omit({ id: true })), async (c) => {
+app.patch('/:id', validateUuidParam('id'), zValidator('json', UpdateDealSchema.omit({ id: true })), async (c) => {
   const user = c.get('user');
   const dealId = c.req.param().id;
   const data = c.req.valid('json' as any);
@@ -38,14 +39,14 @@ app.patch('/:id', zValidator('json', UpdateDealSchema.omit({ id: true })), async
   return c.json({ success: true, data: deal });
 });
 
-app.delete('/:id', async (c) => {
+app.delete('/:id', validateUuidParam('id'), async (c) => {
   const user = c.get('user');
   const dealId = c.req.param().id;
   await dealsService.deleteDeal(dealId, user.uid);
   return c.json({ success: true, deleted: true });
 });
 
-app.post('/:id/flag', zValidator('json', z.object({ reason: z.string() })), async (c) => {
+app.post('/:id/flag', validateUuidParam('id'), zValidator('json', z.object({ reason: z.string().trim().min(1).max(1000) })), async (c) => {
   const user = c.get('user');
   const dealId = c.req.param().id;
   const deal = await dealsService.flagDeal(dealId, user.uid);

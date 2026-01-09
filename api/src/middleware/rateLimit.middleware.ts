@@ -26,7 +26,7 @@ export const rateLimitMiddleware = createMiddleware(async (c, next) => {
 
   try {
     const current = await redis.incr(key);
-    
+
     if (current === 1) {
       await redis.expire(key, windowSeconds);
     }
@@ -39,8 +39,14 @@ export const rateLimitMiddleware = createMiddleware(async (c, next) => {
     }
   } catch (error) {
     if (error instanceof RateLimitError) throw error;
-    // If Redis fails, log warning but allow request (fail open)
-    logger.warn('Rate limit check failed (Redis error)', { error });
+    // PRODUCTION SAFETY: Fail closed if Redis is unavailable
+    // For development, you may want to fail open
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('Rate limit check failed in production - failing closed', { error, key });
+      throw new RateLimitError('Service temporarily unavailable');
+    } else {
+      logger.warn('Rate limit check failed (Redis error) - allowing in dev', { error });
+    }
   }
 
   await next();

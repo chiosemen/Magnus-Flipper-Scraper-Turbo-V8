@@ -2,13 +2,13 @@ import {
   MARKETPLACE_PARAMS,
   Marketplace,
   TierKey,
-} from '../../economics/src/tieredRefresh.model';
+} from '@repo/economics';
 import {
   EntitlementsSnapshot as BillingEntitlementsSnapshot,
   evaluatePricingGuardrails,
   PricingUsageSnapshot,
   TIER_GUARDRAILS,
-} from '../../billing/src/pricingGuardrails';
+} from '@repo/billing';
 
 export type EnforcementAction = 'signal_check' | 'partial_fetch' | 'full_scrape';
 export type EnforcementDecision = 'ALLOW' | 'DOWNGRADE' | 'DENY';

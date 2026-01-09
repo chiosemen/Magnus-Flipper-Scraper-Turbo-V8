@@ -3,7 +3,8 @@ import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
 import { loggerMiddleware } from './middleware/logger.middleware';
 import { errorHandler } from './middleware/error.middleware';
-import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
+import { rateLimitInProcessMiddleware } from './middleware/rateLimitInProcess.middleware';
+import { productionSafetyMiddleware } from './middleware/productionSafety.middleware';
 import routes from './routes';
 
 const app = new Hono();
@@ -16,8 +17,9 @@ app.use('*', cors({
 }));
 
 app.use('*', secureHeaders());
+app.use('*', productionSafetyMiddleware);
 app.use('*', loggerMiddleware);
-app.use('*', rateLimitMiddleware);
+app.use('*', rateLimitInProcessMiddleware);
 
 // Routes
 app.route('/api', routes);
