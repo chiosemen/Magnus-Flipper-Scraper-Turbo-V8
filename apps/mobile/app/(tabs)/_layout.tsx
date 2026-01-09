@@ -1,27 +1,36 @@
 import { Tabs } from 'expo-router';
 
+/**
+ * Tabs Layout
+ *
+ * ROUTING STRUCTURE:
+ * - deals -> deals/index.tsx (list) and deals/[id].tsx (detail)
+ * - monitors -> monitors/index.tsx (list) and monitors/create.tsx (form)
+ * - account -> account.tsx (profile + logout)
+ */
+
 export default function TabsLayout() {
   return (
-    <Tabs>
+    <Tabs screenOptions={{ headerShown: false }}>
       <Tabs.Screen
         name="deals"
         options={{
           title: 'Deals',
-          headerShown: true,
+          tabBarLabel: 'Deals',
         }}
       />
       <Tabs.Screen
         name="monitors"
         options={{
           title: 'Monitors',
-          headerShown: true,
+          tabBarLabel: 'Monitors',
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="account"
         options={{
-          title: 'Profile',
-          headerShown: true,
+          title: 'Account',
+          tabBarLabel: 'Account',
         }}
       />
     </Tabs>

@@ -1,33 +1,28 @@
 import Constants from 'expo-constants';
 
 /**
- * Environment Configuration Loader
+ * Type-Safe Environment Configuration
  *
  * PRODUCTION SAFETY:
- * - All env vars must use EXPO_PUBLIC_ prefix
+ * - All env vars use EXPO_PUBLIC_ prefix
  * - Validates required vars at startup
  * - Fails fast if misconfigured
- *
- * USAGE:
- * Add to .env.local:
- *   EXPO_PUBLIC_API_URL=https://api.example.com
- *   EXPO_PUBLIC_FIREBASE_API_KEY=your-key
  */
 
 type EnvConfig = {
-  apiUrl: string;
+  apiBaseUrl: string;
   firebaseApiKey: string;
   firebaseAuthDomain: string;
   firebaseProjectId: string;
 };
 
 function getEnvVar(key: string, fallback?: string): string {
-  const value = Constants.expoConfig?.extra?.[key] || process.env[`EXPO_PUBLIC_${key}`] || fallback;
+  const value = Constants.expoConfig?.extra?.[key] || fallback;
 
   if (!value) {
     throw new Error(
       `Missing required environment variable: EXPO_PUBLIC_${key}\n` +
-      `Add it to .env.local or app.json extra configuration.`
+        `Add it to .env.local or app.json extra configuration.`
     );
   }
 
@@ -35,16 +30,16 @@ function getEnvVar(key: string, fallback?: string): string {
 }
 
 export const env: EnvConfig = {
-  apiUrl: getEnvVar('API_URL', 'http://localhost:3000'),
-  firebaseApiKey: getEnvVar('FIREBASE_API_KEY', 'demo-api-key'),
-  firebaseAuthDomain: getEnvVar('FIREBASE_AUTH_DOMAIN', 'demo.firebaseapp.com'),
-  firebaseProjectId: getEnvVar('FIREBASE_PROJECT_ID', 'demo-project'),
+  apiBaseUrl: getEnvVar('API_BASE_URL', 'http://localhost:3000'),
+  firebaseApiKey: getEnvVar('FIREBASE_API_KEY', ''),
+  firebaseAuthDomain: getEnvVar('FIREBASE_AUTH_DOMAIN', ''),
+  firebaseProjectId: getEnvVar('FIREBASE_PROJECT_ID', ''),
 };
 
-// Validate config on import
+// Validate config on import (dev only)
 if (__DEV__) {
   console.log('[ENV] Configuration loaded:', {
-    apiUrl: env.apiUrl,
+    apiBaseUrl: env.apiBaseUrl,
     firebaseProjectId: env.firebaseProjectId,
   });
 }
