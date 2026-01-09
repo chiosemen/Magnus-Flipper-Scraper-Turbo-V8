@@ -66,8 +66,12 @@ export const ROUTE_SAFETY: RouteClassification[] = [
   {
     path: '/stripe/webhook',
     method: 'POST',
-    status: 'UNSAFE',
-    reason: 'Complex billing state management, insufficient error boundaries, risk of data corruption on malformed events'
+    status: 'CONDITIONAL',
+    // CRITICAL: Stripe webhooks must ALWAYS be allowed in production
+    // Revenue impact: Subscription activations, tier upgrades, payment confirmations
+    // Safety measures: Signature verification (line 140 stripe.routes.ts), event deduplication (line 47 applyStripeTierChange.ts)
+    // Idempotency: lastEventId prevents duplicate processing
+    reason: 'ALWAYS_ALLOWED: Revenue-critical webhook with signature verification and event deduplication'
   },
 
   // Admin routes - Administrative controls (CRITICAL)

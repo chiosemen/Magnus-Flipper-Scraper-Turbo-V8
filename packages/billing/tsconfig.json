@@ -3,6 +3,9 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
+    // skipLibCheck enabled for Stripe SDK type incompleteness
+    // Stripe API returns properties not fully typed in @types/stripe
+    // This is safe because we validate Stripe events at runtime
     "skipLibCheck": true
   },
   "include": ["src/**/*"],
