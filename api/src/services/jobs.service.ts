@@ -10,24 +10,13 @@ import { logger } from '@repo/logger';
 import { assertMarketplaceWithinLimits } from './marketplaceRate.service';
 import { assertDemoModeAllowsDispatch, getDemoRateOverrides } from './demoMode.service';
 import { recordEnforcementEvent, resolveTuning } from '@repo/core';
-import { TierKey } from '@repo/billing';
+import { TierKey, type EntitlementsSnapshot } from '@repo/billing';
 import type { Marketplace } from '@repo/economics';
 import {
   evaluateEnforcementGate,
   buildTelemetryIncrement,
   recordEnforcementEventIfNeeded,
 } from '@repo/telemetry';
-
-type EntitlementsSnapshot = {
-  tierKey: TierKey;
-  maxConcurrencyUser: number;
-  maxMonitors: number;
-  maxBoostedMonitors: number;
-  refreshIntervalFloorSeconds: number;
-  maxDailyRuns: number;
-  maxProxyGbPerDay: number;
-  entitlementsVersion?: number;
-};
 
 
 export const jobsService = {
@@ -63,7 +52,7 @@ export const jobsService = {
     });
 
     const now = new Date();
-    const entitlements = subscription?.entitlementsJson as EntitlementsSnapshot | null;
+    const entitlements = subscription?.entitlementsJson as EntitlementsSnapshot | null | undefined;
 
     const runningJobs = await db.execute(sql`
       SELECT count(*) as count FROM ${schema.jobs}
@@ -120,8 +109,8 @@ export const jobsService = {
     if (!enforcementDecision.allowed) {
       await recordEnforcementEventIfNeeded(db, schema, {
         userId,
-        marketplace: data.source,
-        tier: entitlements?.tierKey || 'unknown',
+        marketplace: data.source as Marketplace,
+        tier: (entitlements?.tierKey || 'free') as TierKey,
         jobId: null,
         enforcement_mode: enforcementDecision.enforcement_mode,
         decision: enforcementDecisionLabel,
@@ -227,7 +216,7 @@ export const jobsService = {
 
     await recordEnforcementEventIfNeeded(db, schema, {
       userId,
-      marketplace: data.source,
+      marketplace: data.source as Marketplace,
       tier: tierKey,
       jobId: job.id,
       enforcement_mode: enforcementDecision.enforcement_mode,

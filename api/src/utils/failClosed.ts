@@ -17,7 +17,7 @@ export function assertExists<T>(
   errorCode: string = 'REQUIRED_DATA_MISSING'
 ): asserts value is T {
   if (value === null || value === undefined) {
-    logger.error('Fail-closed assertion failed', {
+    logger.error('Fail-closed assertion failed', undefined, {
       errorMessage,
       errorCode,
       stackTrace: new Error().stack,
@@ -34,7 +34,7 @@ export function assertEntitlementsExist<T>(
   userId: string
 ): asserts entitlements is T {
   if (entitlements === null || entitlements === undefined) {
-    logger.error('Entitlements missing for user - failing closed', {
+    logger.error('Entitlements missing for user - failing closed', undefined, {
       userId,
       operation: 'billing_check',
     });
@@ -56,7 +56,7 @@ export function assertUsageTelemetryExists<T>(
   marketplace: string
 ): asserts telemetry is T {
   if (telemetry === null || telemetry === undefined) {
-    logger.error('Usage telemetry missing - failing closed', {
+    logger.error('Usage telemetry missing - failing closed', undefined, {
       userId,
       marketplace,
       operation: 'rate_limit_check',
@@ -79,7 +79,7 @@ export function assertTierLimitsExist<T>(
   userId: string
 ): asserts limits is T {
   if (limits === null || limits === undefined) {
-    logger.error('Tier limits missing - failing closed', {
+    logger.error('Tier limits missing - failing closed', undefined, {
       userId,
       tier,
       operation: 'quota_check',
@@ -108,7 +108,7 @@ export function assertValidCount(
     count < 0 ||
     !isFinite(count)
   ) {
-    logger.error('Invalid count value - failing closed', {
+    logger.error('Invalid count value - failing closed', undefined, {
       fieldName,
       value: count,
       ...context,
@@ -131,7 +131,7 @@ export function assertUserExists<T>(
   operation: string
 ): asserts user is T {
   if (user === null || user === undefined) {
-    logger.error('User not found in database - failing closed', {
+    logger.error('User not found in database - failing closed', undefined, {
       userId,
       operation,
     });
@@ -153,7 +153,7 @@ export function assertWriteSucceeded<T>(
   context: Record<string, unknown> = {}
 ): asserts result is T[] {
   if (!result || result.length === 0) {
-    logger.error('Database write failed - failing closed', {
+    logger.error('Database write failed - failing closed', undefined, {
       operation,
       ...context,
     });
@@ -178,9 +178,9 @@ export async function withFailClosed<T>(
   try {
     return await operation();
   } catch (error) {
-    logger.error('Operation failed with fail-closed guard', {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Operation failed with fail-closed guard', err, {
       operationName,
-      error: error instanceof Error ? error.message : String(error),
       ...context,
     });
     throw error; // Re-throw - never swallow in production
