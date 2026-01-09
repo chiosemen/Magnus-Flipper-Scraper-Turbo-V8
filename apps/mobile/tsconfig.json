@@ -10,7 +10,7 @@
       "@/*": ["./src/*"],
       "@repo/types": ["../../packages/types/src"]
     },
-    "types": ["nativewind/types"]
+    "types": ["nativewind/types", "jest"]
   },
   "include": [
     "**/*.ts",

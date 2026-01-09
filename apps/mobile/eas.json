@@ -53,5 +53,16 @@
         "appleTeamId": "PLACEHOLDER_TEAM_ID"
       }
     }
+  },
+  "update": {
+    "development": {
+      "channel": "development"
+    },
+    "preview": {
+      "channel": "staging"
+    },
+    "production": {
+      "channel": "production"
+    }
   }
 }

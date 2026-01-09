@@ -3,6 +3,11 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { initializeSentry, setUser as setSentryUser, clearUser as clearSentryUser } from '@/lib/sentry';
+import { trackScreenView } from '@/lib/analytics';
+
+// Initialize Sentry at app startup
+initializeSentry();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +29,23 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+
+  // Track screen views
+  useEffect(() => {
+    if (segments.length > 0) {
+      const screenName = segments.join('/');
+      trackScreenView(screenName);
+    }
+  }, [segments]);
+
+  // Set Sentry user context
+  useEffect(() => {
+    if (user) {
+      setSentryUser({ id: user.uid, email: user.email || undefined });
+    } else {
+      clearSentryUser();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (isLoading) return;
