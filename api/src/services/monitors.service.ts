@@ -5,6 +5,7 @@ import { AppError, NotFoundError } from '../utils/errors';
 import { jobsService } from './jobs.service';
 import { policyService } from './policy';
 import { getTierLimits, TIER_ERROR_CODES } from './tierLimits';
+import { assertTierLimitsExist, assertValidCount, assertUserExists } from '../utils/failClosed';
 
 export const monitorsService = {
   async listMonitors(userId: string) {
@@ -24,14 +25,22 @@ export const monitorsService = {
   },
 
   async createMonitor(userId: string, data: CreateMonitor) {
-    // Check Quota
+    // Check Quota - FAIL CLOSED
     const tier = await policyService.getUserTier(userId);
     const limits = getTierLimits(tier);
+
+    // Fail-closed: Assert tier limits exist before proceeding
+    assertTierLimitsExist(limits, tier, userId);
+
     const monitorCount = await db.execute(sql`
       SELECT count(*) as count FROM ${schema.monitors}
       WHERE user_id = ${userId}
     `);
     const totalMonitors = Number(monitorCount[0]?.count || 0);
+
+    // Fail-closed: Validate count is sane
+    assertValidCount(totalMonitors, 'totalMonitors', { userId, tier });
+
     if (totalMonitors >= limits.maxMonitors) {
       throw new AppError(
         'Monitor limit reached for tier',
@@ -77,17 +86,22 @@ export const monitorsService = {
 
   async deleteMonitor(monitorId: string, userId: string) {
     await this.getMonitor(monitorId, userId);
-    
+
     // Transactional delete would be better
     await db.delete(schema.monitors).where(eq(schema.monitors.id, monitorId));
-    
-    // Update usage count
+
+    // Update usage count - FAIL CLOSED
     const user = await db.query.users.findFirst({ where: eq(schema.users.id, userId) });
-    if (user) {
-        await db.update(schema.users)
-          .set({ monitorsUsed: Math.max(0, (user.monitorsUsed || 1) - 1) })
-          .where(eq(schema.users.id, userId));
-    }
+
+    // Fail-closed: User must exist to update usage count
+    assertUserExists(user, userId, 'deleteMonitor');
+
+    const currentUsage = user.monitorsUsed || 0;
+    assertValidCount(currentUsage, 'monitorsUsed', { userId, operation: 'deleteMonitor' });
+
+    await db.update(schema.users)
+      .set({ monitorsUsed: Math.max(0, currentUsage - 1), updatedAt: new Date() })
+      .where(eq(schema.users.id, userId));
   },
 
   async pauseMonitor(monitorId: string, userId: string) {

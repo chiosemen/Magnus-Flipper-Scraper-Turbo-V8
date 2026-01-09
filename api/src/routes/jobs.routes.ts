@@ -4,6 +4,7 @@ import { zValidator } from '@hono/zod-validator';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { jobsService } from '../services/jobs.service';
 import { CreateJobSchema } from '@repo/types';
+import { validateUuidParam } from '../utils/validation';
 
 type Env = {
   Variables: {
@@ -21,7 +22,7 @@ app.get('/', async (c) => {
   return c.json({ success: true, ...result });
 });
 
-app.get('/:id', async (c) => {
+app.get('/:id', validateUuidParam('id'), async (c) => {
   const user = c.get('user');
   const job = await jobsService.getJob(c.req.param().id, user.uid);
   return c.json({ success: true, data: job });
@@ -34,7 +35,7 @@ app.post('/', zValidator('json', CreateJobSchema), async (c) => {
   return c.json({ success: true, data: job }, 201);
 });
 
-app.delete('/:id', async (c) => {
+app.delete('/:id', validateUuidParam('id'), async (c) => {
   const user = c.get('user');
   await jobsService.cancelJob(c.req.param().id, user.uid);
   return c.json({ success: true, cancelled: true });

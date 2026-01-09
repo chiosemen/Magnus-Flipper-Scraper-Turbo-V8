@@ -4,6 +4,7 @@ import { zValidator } from '@hono/zod-validator';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { monitorsService } from '../services/monitors.service';
 import { CreateMonitorSchema, UpdateMonitorSchema } from '@repo/types';
+import { validateUuidParam } from '../utils/validation';
 
 type Env = {
   Variables: {
@@ -21,7 +22,7 @@ app.get('/', async (c) => {
   return c.json({ success: true, ...result });
 });
 
-app.get('/:id', async (c) => {
+app.get('/:id', validateUuidParam('id'), async (c) => {
   const user = c.get('user');
   const monitor = await monitorsService.getMonitor(c.req.param().id, user.uid);
   return c.json({ success: true, data: monitor });
@@ -34,26 +35,26 @@ app.post('/', zValidator('json', CreateMonitorSchema), async (c) => {
   return c.json({ success: true, data: monitor }, 201);
 });
 
-app.patch('/:id', zValidator('json', UpdateMonitorSchema.omit({ id: true })), async (c) => {
+app.patch('/:id', validateUuidParam('id'), zValidator('json', UpdateMonitorSchema.omit({ id: true })), async (c) => {
   const user = c.get('user');
   const data = c.req.valid('json' as any);
   const monitor = await monitorsService.updateMonitor(c.req.param().id, user.uid, data);
   return c.json({ success: true, data: monitor });
 });
 
-app.delete('/:id', async (c) => {
+app.delete('/:id', validateUuidParam('id'), async (c) => {
   const user = c.get('user');
   await monitorsService.deleteMonitor(c.req.param().id, user.uid);
   return c.json({ success: true, deleted: true });
 });
 
-app.post('/:id/pause', async (c) => {
+app.post('/:id/pause', validateUuidParam('id'), async (c) => {
   const user = c.get('user');
   const monitor = await monitorsService.pauseMonitor(c.req.param().id, user.uid);
   return c.json({ success: true, data: monitor });
 });
 
-app.post('/:id/resume', async (c) => {
+app.post('/:id/resume', validateUuidParam('id'), async (c) => {
   const user = c.get('user');
   const monitor = await monitorsService.resumeMonitor(c.req.param().id, user.uid);
   return c.json({ success: true, data: monitor });
