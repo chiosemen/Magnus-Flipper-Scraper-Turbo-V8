@@ -3,6 +3,9 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
+    // skipLibCheck enabled for vendored drizzle-orm types
+    // Vendored drizzle includes adapters we don't use, causing peer dependency type mismatches
+    // This is safe because we only use postgres adapter with proper types
     "skipLibCheck": true
   },
   "include": ["src/**/*"],

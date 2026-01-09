@@ -4,7 +4,8 @@
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
+    // NOTE: skipLibCheck removed from root - only enabled in packages/billing and packages/database
+    // This ensures type checking remains strict in shared code and prevents masking legitimate errors
 
     /* Bundler mode */
     "moduleResolution": "bundler",
