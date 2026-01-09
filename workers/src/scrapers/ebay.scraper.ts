@@ -1,12 +1,34 @@
-import { BaseScraper, ScrapeResult, ScrapeOptions } from './base.scraper';
+import { ScrapeResult, ScrapeOptions } from './base.scraper';
 import { SearchCriteria, CreateDeal, DealSource } from '@repo/types';
-import { Page } from 'playwright';
 import { PriceParser } from '../parsers/price.parser';
 import { TitleParser } from '../parsers/title.parser';
+import { runApifyActor, APIFY_ACTORS, APIFY_DEFAULTS } from '../lib/apify';
+import { StorageService } from '../services/storage.service';
+import { logger } from '@repo/logger';
+import { createHash } from 'crypto';
 
-export class EbayScraper extends BaseScraper {
+interface EbayApifyItem {
+  itemId?: string;
+  title?: string;
+  price?: number | string;
+  currency?: string;
+  url?: string;
+  image?: string;
+  images?: string[];
+  sellerName?: string;
+  sellerUsername?: string;
+  condition?: string;
+  itemLocation?: string;
+}
+
+export class EbayScraper {
   readonly source: DealSource = 'ebay';
   readonly baseUrl = 'https://www.ebay.com';
+  private storageService: StorageService;
+
+  constructor() {
+    this.storageService = new StorageService();
+  }
 
   buildSearchUrl(criteria: SearchCriteria): string {
     const params = new URLSearchParams();
@@ -14,78 +36,143 @@ export class EbayScraper extends BaseScraper {
     if (criteria.minPrice) params.append('_udlo', criteria.minPrice.toString());
     if (criteria.maxPrice) params.append('_udhi', criteria.maxPrice.toString());
     params.append('_sop', '10'); // Newly Listed
-    params.append('LH_BIN', '1'); // Buy It Now (optional, mostly preferred for flipping)
+    params.append('LH_BIN', '1'); // Buy It Now
 
     return `${this.baseUrl}/sch/i.html?${params.toString()}`;
   }
 
   async search(criteria: SearchCriteria, options: ScrapeOptions): Promise<ScrapeResult> {
-    const url = this.buildSearchUrl(criteria);
-    return this.scrapeUrl(url, options);
+    logger.info('[eBay] Starting Apify actor scrape', {
+      keywords: criteria.keywords,
+      jobId: options.jobId,
+    });
+
+    try {
+      // Build Apify actor input
+      const input: Record<string, any> = {
+        query: criteria.keywords.join(' '),
+        maxItems: APIFY_DEFAULTS.MAX_ITEMS,
+        sortBy: 'newly-listed',
+      };
+
+      // Add price filters if provided
+      if (criteria.minPrice) input.minPrice = criteria.minPrice;
+      if (criteria.maxPrice) input.maxPrice = criteria.maxPrice;
+
+      // Run Apify actor
+      const result = await runApifyActor<EbayApifyItem>({
+        actorId: APIFY_ACTORS.EBAY,
+        input,
+        timeoutSecs: APIFY_DEFAULTS.TIMEOUT_SECS,
+        maxItems: APIFY_DEFAULTS.MAX_ITEMS,
+      });
+
+      logger.info('[eBay] Apify actor completed', {
+        itemCount: result.items.length,
+        runId: result.runId,
+      });
+
+      // Map Apify items to CreateDeal format
+      const deals: CreateDeal[] = [];
+      for (const item of result.items) {
+        try {
+          const deal = this.mapToDeal(item, options);
+          if (deal) {
+            await this.storageService.saveDeal(deal, options.jobId, options.userId);
+            deals.push(deal);
+          }
+        } catch (error) {
+          logger.warn('[eBay] Failed to map item', {
+            error: error instanceof Error ? error.message : String(error),
+            item: JSON.stringify(item).substring(0, 100),
+          });
+        }
+      }
+
+      return {
+        dealsFound: deals.length,
+        dealsNew: deals.length,
+        deals,
+      };
+    } catch (error) {
+      logger.error('[eBay] Scrape failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
-  async parseSearchResults(page: Page): Promise<{ listings: CreateDeal[]; nextPageUrl: string | null }> {
-    const listings: CreateDeal[] = [];
-    const elements = await page.$$('.s-item');
+  private mapToDeal(item: EbayApifyItem, options: ScrapeOptions): CreateDeal | null {
+    // Extract and validate required fields
+    const title = item.title?.trim();
+    if (!title) return null;
 
-    for (const el of elements) {
-      try {
-        const titleEl = await el.$('.s-item__title');
-        const title = await titleEl?.innerText() || '';
-        if (title.toLowerCase().includes('shop on ebay')) continue; // Skip header
+    // Price parsing
+    let price: number | null = null;
+    let currency = 'USD';
 
-        const linkEl = await el.$('.s-item__link');
-        const url = await linkEl?.getAttribute('href') || '';
-        
-        // ID
-        const idMatch = url.match(/\/(\d+)\?/);
-        const sourceId = idMatch ? idMatch[1] : '';
-        if (!sourceId) continue;
-
-        const priceEl = await el.$('.s-item__price');
-        const priceText = await priceEl?.innerText() || '';
-        const { value: price, currency } = PriceParser.parse(priceText);
-
-        if (price === null) continue;
-
-        const imgEl = await el.$('.s-item__image-img');
-        const imgUrl = await imgEl?.getAttribute('src') || '';
-
-        const sellerEl = await el.$('.s-item__seller-info-text');
-        const sellerText = await sellerEl?.innerText() || 'Unknown';
-        const sellerName = sellerText.split(' ')[0] || 'eBay User';
-
-        listings.push({
-           source: 'ebay',
-           sourceId,
-           sourceUrl: url,
-           title: TitleParser.clean(title),
-           category: 'general',
-           condition: TitleParser.extractCondition(title),
-           listPrice: price,
-           currency: currency as any,
-           images: imgUrl ? [imgUrl] : [],
-           thumbnailUrl: imgUrl,
-           status: 'active',
-           sellerName: sellerName,
-           monitorId: '',
-           userId: '',
-           dealScore: 50,
-           scrapedAt: new Date(),
-           firstSeenAt: new Date(),
-           lastSeenAt: new Date(),
-           createdAt: new Date(),
-           updatedAt: new Date()
-        });
-
-      } catch (e) {
-        // skip
-      }
+    if (typeof item.price === 'number') {
+      price = item.price;
+    } else if (typeof item.price === 'string') {
+      const parsed = PriceParser.parse(item.price);
+      price = parsed.value;
+      currency = parsed.currency || 'USD';
     }
 
-    const nextLink = await page.$('a.pagination__next');
-    const nextPageUrl = await nextLink?.getAttribute('href') || null;
+    if (price === null || price <= 0) return null;
 
-    return { listings, nextPageUrl };
+    // Determine source ID (prefer itemId, fallback to URL extraction or hash)
+    let sourceId = item.itemId?.trim();
+    if (!sourceId && item.url) {
+      const idMatch = item.url.match(/\/(\d+)\?/);
+      sourceId = idMatch ? idMatch[1] : undefined;
+    }
+    if (!sourceId) {
+      const url = item.url || '';
+      const hash = createHash('sha256').update(url + title).digest('hex');
+      sourceId = hash.substring(0, 16);
+    }
+
+    // Build source URL
+    let sourceUrl = item.url || '';
+    if (!sourceUrl) {
+      sourceUrl = sourceId ? `https://www.ebay.com/itm/${sourceId}` : this.baseUrl;
+    }
+
+    // Images
+    const thumbnail = item.image || (item.images && item.images[0]) || '';
+    const images = item.images || (thumbnail ? [thumbnail] : []);
+
+    // Seller name
+    const sellerName = item.sellerName || item.sellerUsername || 'eBay User';
+
+    // Condition
+    const conditionStr = item.condition?.toLowerCase() || '';
+    let condition: any = TitleParser.extractCondition(title);
+    if (conditionStr.includes('new')) condition = 'new';
+    else if (conditionStr.includes('like new')) condition = 'like_new';
+    else if (conditionStr.includes('good')) condition = 'good';
+    else if (conditionStr.includes('fair')) condition = 'fair';
+
+    return {
+      source: 'ebay',
+      sourceId,
+      sourceUrl,
+      title: TitleParser.clean(title),
+      category: 'general',
+      condition,
+      listPrice: price,
+      currency: currency as any,
+      images: images.filter(Boolean),
+      thumbnailUrl: thumbnail || undefined,
+      status: 'active',
+      sellerName,
+      location: item.itemLocation,
+      monitorId: options.monitorId || '',
+      userId: options.userId,
+      scrapedAt: new Date(),
+      firstSeenAt: new Date(),
+      lastSeenAt: new Date(),
+    };
   }
 }
