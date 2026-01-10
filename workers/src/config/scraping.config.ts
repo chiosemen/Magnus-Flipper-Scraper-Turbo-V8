@@ -7,7 +7,7 @@
 
 import { logger } from '@repo/logger';
 
-export type Marketplace = 'facebook' | 'ebay' | 'vinted' | 'gumtree' | 'craigslist';
+export type Marketplace = 'amazon' | 'facebook' | 'ebay' | 'vinted' | 'gumtree' | 'craigslist';
 
 export const SCRAPING_ENABLED = process.env.SCRAPING_ENABLED !== 'false';
 
@@ -19,6 +19,12 @@ interface ActorConfig {
 }
 
 export const SCRAPING_ACTORS: Record<Marketplace, ActorConfig> = {
+  amazon: {
+    actorId: process.env.APIFY_ACTOR_AMAZON || 'apify/amazon-scraper',
+    enabled: true,
+    defaultMaxItems: 50,
+    timeoutSecs: 120,
+  },
   facebook: {
     actorId: process.env.APIFY_ACTOR_FACEBOOK || 'apify/facebook-marketplace-scraper',
     enabled: true,

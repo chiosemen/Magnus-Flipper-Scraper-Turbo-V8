@@ -1,10 +1,11 @@
 import { JobPayload, SearchCriteria, CreateDeal } from '@repo/types';
 import { scrapeAmazon } from './scrapers/amazon';
-import { scrapeEbay } from './scrapers/ebay';
-import { scrapeFacebook } from './scrapers/facebook';
-import { scrapeVinted } from './scrapers/vinted';
+import { scrapeEbay } from './scrapers/ebay.scraper';
+import { scrapeFacebook } from './scrapers/facebook.scraper';
+import { scrapeVinted } from './scrapers/vinted.scraper';
 import { scrapeCraigslist } from './scrapers/craigslist';
 import { StatusService } from './services/status.service';
+import { SCRAPING_ENABLED } from './config/scraping.config';
 import { logger } from '@repo/logger';
 import { db, schema } from './lib/db';
 import { and, eq, sql } from 'drizzle-orm';
@@ -110,18 +111,25 @@ const enforceTierLimits = async (payload: JobPayload) => {
  * Pure function dispatch to Apify-first scrapers
  * NO classes, NO inheritance, NO magic
  */
-async function runScrape(source: string, criteria: SearchCriteria): Promise<CreateDeal[]> {
+async function runScrape(
+  source: string,
+  query: string,
+  userId: string,
+  monitorId?: string
+): Promise<CreateDeal[]> {
+  const params = { query, userId, monitorId };
+
   switch (source) {
     case 'amazon':
-      return scrapeAmazon(criteria);
+      return (await scrapeAmazon(params)).items;
     case 'ebay':
-      return scrapeEbay(criteria);
+      return (await scrapeEbay(params)).items;
     case 'facebook':
-      return scrapeFacebook(criteria);
+      return (await scrapeFacebook(params)).items;
     case 'vinted':
-      return scrapeVinted(criteria);
+      return (await scrapeVinted(params)).items;
     case 'craigslist':
-      return scrapeCraigslist(criteria);
+      return (await scrapeCraigslist(params)).items;
     default:
       throw new Error(`Unsupported source: ${source}`);
   }
@@ -136,6 +144,21 @@ export class JobRouter {
 
   async route(payload: JobPayload) {
     const { jobId, type, source, params, meta } = payload;
+
+    // Global kill switch - blocks ALL scraping when disabled
+    if (!SCRAPING_ENABLED) {
+      logger.warn('[Router] Scraping globally disabled via SCRAPING_ENABLED', {
+        jobId,
+        source,
+        userId: meta.userId,
+      });
+      await this.statusService.updateStatus(jobId, 'completed', 100, {
+        dealsFound: 0,
+        dealsNew: 0,
+        message: 'Scraping disabled'
+      });
+      return { dealsFound: 0, dealsNew: 0, deals: [] };
+    }
 
     await enforceTierLimits(payload);
     await this.statusService.updateStatus(jobId, 'running', 10, { startedAt: new Date() });
@@ -162,14 +185,10 @@ export class JobRouter {
 
       if (type === 'monitor_search') {
         // Execute Apify-first scrape
-        deals = await runScrape(source, criteria);
+        const query = criteria.keywords?.join(' ') || '';
+        deals = await runScrape(source, query, meta.userId, params.monitorId);
 
-        // Enrich with metadata
-        deals = deals.map(deal => ({
-          ...deal,
-          userId: meta.userId,
-          monitorId: params.monitorId || '',
-        }));
+        // Metadata already enriched by scrapers
       } else if (type === 'single_url') {
         logger.warn('Single URL scrape not implemented, requires URL-specific Apify actors');
         deals = [];
