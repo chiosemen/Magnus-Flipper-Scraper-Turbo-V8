@@ -183,4 +183,53 @@ describe('Stripe webhook entitlements (integration)', () => {
     expect(second?.lastEventId).toBe('evt_sub_idem_1');
     expect(first?.updatedAt?.getTime()).toBe(second?.updatedAt?.getTime());
   });
+
+  // P0 Test: Stripe webhook signature verification fails closed
+  describe('Signature Verification (P0 Fail-Closed)', () => {
+    it('returns 400 when signature is missing', async () => {
+      const res = await client.post('/api/stripe/webhook')
+        .set('content-type', 'application/json')
+        .send(JSON.stringify({}));
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('returns 400 when signature verification fails', async () => {
+      // Mock constructEvent to throw signature verification error
+      const mockStripe = vi.mocked((await import('../../../src/lib/stripe')).getStripeClient());
+      const originalConstructEvent = mockStripe.webhooks.constructEvent;
+
+      mockStripe.webhooks.constructEvent = vi.fn().mockImplementation(() => {
+        throw new Error('Webhook signature verification failed');
+      });
+
+      const res = await client.post('/api/stripe/webhook')
+        .set('stripe-signature', 'bad_signature')
+        .set('content-type', 'application/json')
+        .send(JSON.stringify({}));
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+
+      // Restore original mock
+      mockStripe.webhooks.constructEvent = originalConstructEvent;
+    });
+
+    it('returns 400 when webhook secret is missing', async () => {
+      const originalSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      delete process.env.STRIPE_WEBHOOK_SECRET;
+
+      const res = await client.post('/api/stripe/webhook')
+        .set('stripe-signature', 'sig_test')
+        .set('content-type', 'application/json')
+        .send(JSON.stringify({}));
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+
+      // Restore
+      if (originalSecret) process.env.STRIPE_WEBHOOK_SECRET = originalSecret;
+    });
+  });
 });
