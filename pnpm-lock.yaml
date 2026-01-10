@@ -506,6 +506,9 @@ importers:
       '@repo/logger':
         specifier: workspace:*
         version: link:../packages/logger
+      '@repo/telemetry':
+        specifier: workspace:*
+        version: link:../packages/telemetry
       '@repo/types':
         specifier: workspace:*
         version: link:../packages/types
@@ -524,12 +527,6 @@ importers:
       drizzle-orm:
         specifier: workspace:*
         version: link:../packages/vendor-drizzle
-      fingerprint-generator:
-        specifier: ^2.1.43
-        version: 2.1.79
-      fingerprint-injector:
-        specifier: ^2.1.43
-        version: 2.1.79(playwright@1.57.0)
       firebase-admin:
         specifier: ^12.1.0
         version: 12.7.0(encoding@0.1.13)
@@ -539,9 +536,6 @@ importers:
       ioredis:
         specifier: ^5.4.1
         version: 5.9.1
-      playwright:
-        specifier: ^1.44.0
-        version: 1.57.0
       postgres:
         specifier: ^3.4.4
         version: 3.4.8
