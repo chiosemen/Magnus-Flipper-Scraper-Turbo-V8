@@ -30,12 +30,12 @@ jobs:
         run: |
           set -euo pipefail
           {
-            echo "=== pnpm test:db:up ==="
-            pnpm test:db:up
+            echo "=== pnpm --filter @repo/database migrate ==="
+            pnpm --filter @repo/database migrate
             echo "=== pnpm test:integration ==="
             pnpm test:integration
-            echo "=== pnpm test:db:down ==="
-            pnpm test:db:down
+            echo "=== pnpm --filter @repo/database migrate:rollback ==="
+            pnpm --filter @repo/database migrate:rollback || true
           } | tee integration-logs.txt
 
       - name: Create summary
