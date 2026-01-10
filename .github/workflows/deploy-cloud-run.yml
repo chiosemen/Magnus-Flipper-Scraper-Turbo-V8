@@ -1,0 +1,38 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  SERVICE_NAME: magnus-flipper-workers
+  REGION: us-east1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --region=$REGION \
+            --source=. \
+            --platform=managed \
+            --memory=1024Mi \
+            --set-env-vars \
+              NODE_ENV=production,\
+              SCRAPING_ENABLED=true,\
+              USAGE_AGGREGATION_ENABLED=false,\
+              BILLING_USAGE_REPORTING_ENABLED=false,\
+              APIFY_TOKEN=${{ secrets.APIFY_TOKEN }},\
+              STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }},\
+              STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
