@@ -1,0 +1,100 @@
+{
+  "actorRunId": "mock-run-vinted-001",
+  "datasetId": "mock-dataset-vinted-001",
+  "status": "SUCCEEDED",
+  "items": [
+    {
+      "title": "Nike Air Max 90 White Size 10",
+      "price": 85,
+      "currency": "USD",
+      "url": "https://www.vinted.com/items/mock-vinted-001",
+      "location": "Los Angeles, CA",
+      "seller": "sneaker_hunter",
+      "description": "Gently used Nike Air Max 90. Clean and authentic.",
+      "images": [
+        "https://example.com/vinted1.jpg",
+        "https://example.com/vinted2.jpg"
+      ],
+      "postedAt": "2026-01-09T12:00:00Z",
+      "condition": "Good",
+      "brand": "Nike",
+      "category": "Sneakers",
+      "size": "10"
+    },
+    {
+      "title": "Adidas Ultraboost 21 Black Size 9.5",
+      "price": 95,
+      "currency": "USD",
+      "url": "https://www.vinted.com/items/mock-vinted-002",
+      "location": "New York, NY",
+      "seller": "runner_deals",
+      "description": "Adidas Ultraboost in excellent condition. Worn 3 times.",
+      "images": [
+        "https://example.com/vinted3.jpg"
+      ],
+      "postedAt": "2026-01-09T09:30:00Z",
+      "condition": "Very Good",
+      "brand": "Adidas",
+      "category": "Sneakers",
+      "size": "9.5"
+    },
+    {
+      "title": "Levi's 501 Jeans Blue W32 L32",
+      "price": 35,
+      "currency": "USD",
+      "url": "https://www.vinted.com/items/mock-vinted-003",
+      "location": "Chicago, IL",
+      "seller": "vintage_finds",
+      "description": "Classic Levi's 501 jeans. Vintage wash.",
+      "images": [
+        "https://example.com/vinted4.jpg",
+        "https://example.com/vinted5.jpg"
+      ],
+      "postedAt": "2026-01-08T16:20:00Z",
+      "condition": "Good",
+      "brand": "Levi's",
+      "category": "Jeans",
+      "size": "W32 L32"
+    },
+    {
+      "title": "North Face Puffer Jacket Medium",
+      "price": 120,
+      "currency": "USD",
+      "url": "https://www.vinted.com/items/mock-vinted-004",
+      "location": "Seattle, WA",
+      "seller": "outdoor_gear",
+      "description": "The North Face puffer jacket. Warm and cozy.",
+      "images": [
+        "https://example.com/vinted6.jpg"
+      ],
+      "postedAt": "2026-01-08T11:45:00Z",
+      "condition": "Very Good",
+      "brand": "The North Face",
+      "category": "Outerwear",
+      "size": "M"
+    },
+    {
+      "title": "Patagonia Fleece Jacket Small",
+      "price": 65,
+      "currency": "USD",
+      "url": "https://www.vinted.com/items/mock-vinted-005",
+      "location": "Portland, OR",
+      "seller": "eco_fashion",
+      "description": "Patagonia fleece in great condition. Sustainable fashion.",
+      "images": [
+        "https://example.com/vinted7.jpg",
+        "https://example.com/vinted8.jpg"
+      ],
+      "postedAt": "2026-01-07T14:00:00Z",
+      "condition": "Good",
+      "brand": "Patagonia",
+      "category": "Outerwear",
+      "size": "S"
+    }
+  ],
+  "stats": {
+    "totalItems": 5,
+    "runtime": 32,
+    "memoryUsage": 768
+  }
+}

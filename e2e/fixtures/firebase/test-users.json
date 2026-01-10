@@ -1,0 +1,72 @@
+{
+  "users": [
+    {
+      "uid": "test-user-free-001",
+      "email": "free-tier@magnusflipper.test",
+      "displayName": "Free Tier User",
+      "emailVerified": true,
+      "tier": "free",
+      "stripeCustomerId": "cus_test_free_001",
+      "createdAt": "2026-01-01T00:00:00Z"
+    },
+    {
+      "uid": "test-user-basic-001",
+      "email": "basic-tier@magnusflipper.test",
+      "displayName": "Basic Tier User",
+      "emailVerified": true,
+      "tier": "basic",
+      "stripeCustomerId": "cus_test_basic_001",
+      "stripeSubscriptionId": "sub_test_basic_001",
+      "createdAt": "2025-12-01T00:00:00Z"
+    },
+    {
+      "uid": "test-user-pro-001",
+      "email": "pro-tier@magnusflipper.test",
+      "displayName": "Pro Tier User",
+      "emailVerified": true,
+      "tier": "pro",
+      "stripeCustomerId": "cus_test_pro_001",
+      "stripeSubscriptionId": "sub_test_pro_001",
+      "createdAt": "2025-11-01T00:00:00Z"
+    },
+    {
+      "uid": "test-user-elite-001",
+      "email": "elite-tier@magnusflipper.test",
+      "displayName": "Elite Tier User",
+      "emailVerified": true,
+      "tier": "elite",
+      "stripeCustomerId": "cus_test_elite_001",
+      "stripeSubscriptionId": "sub_test_elite_001",
+      "createdAt": "2025-10-01T00:00:00Z"
+    },
+    {
+      "uid": "test-user-enterprise-001",
+      "email": "enterprise-tier@magnusflipper.test",
+      "displayName": "Enterprise Tier User",
+      "emailVerified": true,
+      "tier": "enterprise",
+      "stripeCustomerId": "cus_test_enterprise_001",
+      "stripeSubscriptionId": "sub_test_enterprise_001",
+      "createdAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "uid": "test-user-admin-001",
+      "email": "admin@magnusflipper.test",
+      "displayName": "Admin User",
+      "emailVerified": true,
+      "tier": "enterprise",
+      "stripeCustomerId": "cus_test_admin_001",
+      "stripeSubscriptionId": "sub_test_admin_001",
+      "isAdmin": true,
+      "createdAt": "2025-08-01T00:00:00Z"
+    }
+  ],
+  "customTokens": {
+    "test-user-free-001": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJ0ZXN0LXVzZXItZnJlZS0wMDEiLCJpYXQiOjE3MDQ5MDI0MDAsImV4cCI6MTcwNDk4ODgwMH0.mock-signature-free",
+    "test-user-basic-001": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJ0ZXN0LXVzZXItYmFzaWMtMDAxIiwiaWF0IjoxNzA0OTAyNDAwLCJleHAiOjE3MDQ5ODg4MDB9.mock-signature-basic",
+    "test-user-pro-001": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJ0ZXN0LXVzZXItcHJvLTAwMSIsImlhdCI6MTcwNDkwMjQwMCwiZXhwIjoxNzA0OTg4ODAwfQ.mock-signature-pro",
+    "test-user-elite-001": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJ0ZXN0LXVzZXItZWxpdGUtMDAxIiwiaWF0IjoxNzA0OTAyNDAwLCJleHAiOjE3MDQ5ODg4MDB9.mock-signature-elite",
+    "test-user-enterprise-001": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJ0ZXN0LXVzZXItZW50ZXJwcmlzZS0wMDEiLCJpYXQiOjE3MDQ5MDI0MDAsImV4cCI6MTcwNDk4ODgwMH0.mock-signature-enterprise",
+    "test-user-admin-001": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJ0ZXN0LXVzZXItYWRtaW4tMDAxIiwiaWF0IjoxNzA0OTAyNDAwLCJleHAiOjE3MDQ5ODg4MDAsImFkbWluIjp0cnVlfQ.mock-signature-admin"
+  }
+}

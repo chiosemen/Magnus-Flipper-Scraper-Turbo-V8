@@ -1,0 +1,11 @@
+{
+  "actorRunId": "mock-run-empty-001",
+  "datasetId": "mock-dataset-empty-001",
+  "status": "SUCCEEDED",
+  "items": [],
+  "stats": {
+    "totalItems": 0,
+    "runtime": 15,
+    "memoryUsage": 256
+  }
+}

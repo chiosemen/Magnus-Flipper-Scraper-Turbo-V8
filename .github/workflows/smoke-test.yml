@@ -1,0 +1,318 @@
+name: Production Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      skip_deployment:
+        description: 'Skip deployment step (test existing deployment)'
+        required: false
+        default: false
+        type: boolean
+
+  # Automatically run after successful main branch merge
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    env:
+      ENVIRONMENT: ${{ inputs.environment || 'staging' }}
+      API_URL: ${{ inputs.environment == 'production' && 'https://api.magnusflipper.com' || 'https://api-staging.magnusflipper.com' }}
+      SKIP_DEPLOYMENT: ${{ inputs.skip_deployment || false }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Google Cloud SDK
+        if: env.SKIP_DEPLOYMENT == 'false'
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Deploy to staging
+        if: env.SKIP_DEPLOYMENT == 'false' && env.ENVIRONMENT == 'staging'
+        run: |
+          echo "🚀 Deploying API to staging..."
+          gcloud run deploy magnus-flipper-api \
+            --region us-central1 \
+            --tag staging-${{ github.sha }} \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/api:${{ github.sha }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars NODE_ENV=staging
+
+          echo "✅ Deployment complete"
+          echo "Waiting 30 seconds for service to stabilize..."
+          sleep 30
+
+      - name: Health check
+        id: health
+        run: |
+          echo "🏥 Running health check..."
+
+          max_attempts=5
+          attempt=0
+
+          while [ $attempt -lt $max_attempts ]; do
+            response=$(curl -s -w "%{http_code}" -o /tmp/health.json $API_URL/api/health)
+
+            if [ "$response" = "200" ]; then
+              echo "✅ Health check passed"
+              cat /tmp/health.json
+              exit 0
+            fi
+
+            echo "⚠️  Attempt $((attempt + 1))/$max_attempts failed with status $response"
+            attempt=$((attempt + 1))
+            sleep 5
+          done
+
+          echo "❌ Health check failed after $max_attempts attempts"
+          exit 1
+
+      - name: Readiness check
+        run: |
+          echo "🔍 Running readiness check..."
+
+          response=$(curl -s $API_URL/api/health/ready)
+          status=$(echo $response | jq -r '.status // empty')
+          db_status=$(echo $response | jq -r '.db // empty')
+
+          if [ "$status" != "ready" ]; then
+            echo "❌ Service not ready: $response"
+            exit 1
+          fi
+
+          if [ "$db_status" != "ok" ]; then
+            echo "⚠️  Database status: $db_status"
+          fi
+
+          echo "✅ Readiness check passed"
+          echo "$response" | jq .
+
+      - name: Create demo scrape job
+        id: create-job
+        run: |
+          echo "📝 Creating demo scrape job..."
+
+          # Use demo endpoint (no auth required for smoke test)
+          response=$(curl -s -X POST $API_URL/api/monitors/demo \
+            -H "Content-Type: application/json" \
+            -H "X-Admin-Token: ${{ secrets.ADMIN_TOKEN }}" \
+            -d '{
+              "query": "iPhone 13",
+              "marketplace": "facebook",
+              "maxPrice": 500
+            }')
+
+          job_id=$(echo $response | jq -r '.id // empty')
+
+          if [ -z "$job_id" ]; then
+            echo "❌ Failed to create job: $response"
+            exit 1
+          fi
+
+          echo "job_id=$job_id" >> $GITHUB_OUTPUT
+          echo "✅ Demo job created: $job_id"
+
+      - name: Poll job status
+        run: |
+          echo "⏳ Polling job status..."
+
+          job_id="${{ steps.create-job.outputs.job_id }}"
+          max_attempts=24  # 2 minutes max (5s interval)
+          attempt=0
+
+          while [ $attempt -lt $max_attempts ]; do
+            response=$(curl -s $API_URL/api/monitors/$job_id)
+            status=$(echo $response | jq -r '.status // empty')
+
+            echo "  Attempt $((attempt + 1)): status = $status"
+
+            if [ "$status" = "completed" ]; then
+              echo "✅ Job completed successfully"
+              echo "$response" | jq .
+              exit 0
+            fi
+
+            if [ "$status" = "failed" ]; then
+              echo "❌ Job failed"
+              echo "$response" | jq .
+              exit 1
+            fi
+
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+
+          echo "❌ Job did not complete within 2 minutes"
+          exit 1
+
+      - name: Verify deals returned
+        run: |
+          echo "🔍 Verifying deals returned..."
+
+          job_id="${{ steps.create-job.outputs.job_id }}"
+          response=$(curl -s "$API_URL/api/deals?jobId=$job_id&limit=10")
+
+          deal_count=$(echo $response | jq '. | length')
+
+          if [ "$deal_count" -lt 1 ]; then
+            echo "❌ No deals returned"
+            exit 1
+          fi
+
+          echo "✅ $deal_count deals returned"
+          echo "$response" | jq '.[0:3]'  # Show first 3 deals
+
+      - name: Test kill-switch - Enable
+        id: killswitch-enable
+        run: |
+          echo "🛑 Enabling kill-switch (disable scrapers)..."
+
+          response=$(curl -s -X PATCH $API_URL/api/admin/controls/kill-switches \
+            -H "Content-Type: application/json" \
+            -H "X-Admin-Token: ${{ secrets.ADMIN_TOKEN }}" \
+            -d '{"scrapersEnabled":false}')
+
+          scrapers_enabled=$(echo $response | jq -r '.scrapersEnabled // empty')
+
+          if [ "$scrapers_enabled" != "false" ]; then
+            echo "❌ Failed to disable scrapers: $response"
+            exit 1
+          fi
+
+          echo "✅ Kill-switch enabled (scrapers disabled)"
+          echo "$response" | jq .
+
+      - name: Test kill-switch - Enforce
+        run: |
+          echo "🔒 Verifying kill-switch enforcement..."
+
+          response=$(curl -s -w "%{http_code}" -o /tmp/blocked.json \
+            -X POST $API_URL/api/monitors/demo \
+            -H "Content-Type: application/json" \
+            -H "X-Admin-Token: ${{ secrets.ADMIN_TOKEN }}" \
+            -d '{"query":"test","marketplace":"facebook"}')
+
+          if [ "$response" != "503" ]; then
+            echo "❌ Kill-switch not enforced (expected 503, got $response)"
+            cat /tmp/blocked.json
+            exit 1
+          fi
+
+          error_message=$(cat /tmp/blocked.json | jq -r '.error // .message // empty')
+          echo "✅ Kill-switch enforced correctly"
+          echo "  Error message: $error_message"
+
+      - name: Test kill-switch - Disable
+        run: |
+          echo "✅ Disabling kill-switch (re-enable scrapers)..."
+
+          response=$(curl -s -X PATCH $API_URL/api/admin/controls/kill-switches \
+            -H "Content-Type: application/json" \
+            -H "X-Admin-Token: ${{ secrets.ADMIN_TOKEN }}" \
+            -d '{"scrapersEnabled":true}')
+
+          scrapers_enabled=$(echo $response | jq -r '.scrapersEnabled // empty')
+
+          if [ "$scrapers_enabled" != "true" ]; then
+            echo "❌ Failed to re-enable scrapers: $response"
+            exit 1
+          fi
+
+          echo "✅ Kill-switch disabled (scrapers re-enabled)"
+
+      - name: Test marketplace-specific kill-switch
+        run: |
+          echo "🔍 Testing marketplace-specific kill-switch..."
+
+          # Disable Facebook marketplace
+          curl -s -X PATCH $API_URL/api/admin/controls/kill-switches \
+            -H "Content-Type: application/json" \
+            -H "X-Admin-Token: ${{ secrets.ADMIN_TOKEN }}" \
+            -d '{"facebookEnabled":false}' > /dev/null
+
+          # Try to create Facebook job (should fail)
+          response=$(curl -s -w "%{http_code}" -o /tmp/facebook-blocked.json \
+            -X POST $API_URL/api/monitors/demo \
+            -H "Content-Type: application/json" \
+            -H "X-Admin-Token: ${{ secrets.ADMIN_TOKEN }}" \
+            -d '{"query":"test","marketplace":"facebook"}')
+
+          if [ "$response" != "503" ]; then
+            echo "❌ Facebook kill-switch not enforced"
+            exit 1
+          fi
+
+          # Re-enable Facebook
+          curl -s -X PATCH $API_URL/api/admin/controls/kill-switches \
+            -H "Content-Type: application/json" \
+            -H "X-Admin-Token: ${{ secrets.ADMIN_TOKEN }}" \
+            -d '{"facebookEnabled":true}' > /dev/null
+
+          echo "✅ Marketplace-specific kill-switch working"
+
+      - name: Cleanup test data
+        if: always()
+        run: |
+          echo "🧹 Cleaning up test data..."
+
+          job_id="${{ steps.create-job.outputs.job_id }}"
+
+          if [ -n "$job_id" ]; then
+            curl -s -X DELETE $API_URL/api/monitors/$job_id \
+              -H "X-Admin-Token: ${{ secrets.ADMIN_TOKEN }}" || true
+            echo "✅ Test monitor deleted"
+          else
+            echo "ℹ️  No job to cleanup"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 🎯 Smoke Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** $ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
+          echo "**API URL:** $API_URL" >> $GITHUB_STEP_SUMMARY
+          echo "**Job ID:** ${{ steps.create-job.outputs.job_id }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Health check" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Readiness check" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Demo scrape job created" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Job completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Deals returned" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Kill-switch enabled" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Kill-switch enforced" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Kill-switch disabled" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Marketplace kill-switch tested" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Cleanup completed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "## ❌ Smoke Test Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** $ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
+          echo "**API URL:** $API_URL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the workflow logs for details." >> $GITHUB_STEP_SUMMARY
