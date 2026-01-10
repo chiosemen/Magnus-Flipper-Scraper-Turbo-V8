@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { JobPayload, SearchCriteria, CreateDeal } from '@repo/types';
 import { scrapeAmazon } from './scrapers/amazon';
 import { scrapeEbay } from './scrapers/ebay.scraper';
@@ -5,11 +6,26 @@ import { scrapeFacebook } from './scrapers/facebook.scraper';
 import { scrapeVinted } from './scrapers/vinted.scraper';
 import { scrapeGumtree } from './scrapers/gumtree.scraper';
 import { scrapeCraigslist } from './scrapers/craigslist';
+=======
+import { JobPayload, SearchCriteria } from '@repo/types';
+import { ScrapeResult, ScrapeOptions } from './scrapers/base.scraper';
+import { CraigslistScraper } from './scrapers/craigslist.scraper';
+import { EbayScraper } from './scrapers/ebay.scraper';
+import { AmazonScraper } from './scrapers/amazon.scraper';
+import { FacebookScraper } from './scrapers/facebook.scraper';
+import { VintedScraper } from './scrapers/vinted/vinted.scraper';
+>>>>>>> main
 import { StatusService } from './services/status.service';
 import { SCRAPING_ENABLED } from './config/scraping.config';
 import { logger } from '@repo/logger';
 import { db, schema } from './lib/db';
 import { and, eq, sql } from 'drizzle-orm';
+
+// Interface for scrapers (now using Apify actors instead of browser automation)
+interface Scraper {
+  search(criteria: SearchCriteria, options: ScrapeOptions): Promise<ScrapeResult>;
+  buildSearchUrl(criteria: SearchCriteria): string;
+}
 
 const TIER_ERROR_CODES = {
   MONITOR_LIMIT: 'TIER_MONITOR_LIMIT',
@@ -139,10 +155,25 @@ async function runScrape(
 }
 
 export class JobRouter {
+<<<<<<< HEAD
+=======
+  private scrapers: Record<string, Scraper>;
+>>>>>>> main
   private statusService: StatusService;
 
   constructor() {
     this.statusService = new StatusService();
+<<<<<<< HEAD
+=======
+    // All scrapers now use Apify actors instead of browser automation
+    this.scrapers = {
+      craigslist: new CraigslistScraper(),
+      ebay: new EbayScraper(),
+      amazon: new AmazonScraper(),
+      facebook: new FacebookScraper(),
+      vinted: new VintedScraper(),
+    };
+>>>>>>> main
   }
 
   async route(payload: JobPayload) {
