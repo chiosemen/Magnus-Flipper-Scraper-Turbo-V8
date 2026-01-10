@@ -46,7 +46,7 @@ export class StorageService {
           scrapedAt: deal.scrapedAt ? new Date(deal.scrapedAt) : new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
-        }).returning();
+        } as any).returning();
         
         // Initial price history
         await db.insert(schema.priceHistory).values({

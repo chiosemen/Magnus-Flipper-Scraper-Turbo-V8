@@ -1,17 +1,3 @@
-<<<<<<< HEAD
-import { runApifyActor } from '../lib/apify';
-import {
-  SCRAPING_ACTORS,
-  SCRAPING_ENABLED,
-} from '../config/scraping.config';
-import { CreateDeal, DealCondition, Currency } from '@repo/types';
-import { logger } from '@repo/logger';
-import crypto from 'crypto';
-
-interface EbayApifyItem {
-  itemId?: string;
-  epid?: string;
-=======
 import { ScrapeResult, ScrapeOptions } from './base.scraper';
 import { SearchCriteria, CreateDeal, DealSource } from '@repo/types';
 import { PriceParser } from '../parsers/price.parser';
@@ -23,85 +9,10 @@ import { createHash } from 'crypto';
 
 interface EbayApifyItem {
   itemId?: string;
->>>>>>> main
   title?: string;
   price?: number | string;
   currency?: string;
   url?: string;
-<<<<<<< HEAD
-  itemUrl?: string;
-  image?: string;
-  images?: string[];
-  location?: string;
-  itemLocation?: string;
-  description?: string;
-  category?: string;
-  categoryPath?: string;
-  condition?: string;
-  conditionDescription?: string;
-  seller?: {
-    username?: string;
-    feedbackScore?: number;
-    feedbackPercentage?: number;
-  };
-  sellerUsername?: string;
-}
-
-const mapEbayCondition = (condition?: string): DealCondition => {
-  const lower = (condition || '').toLowerCase();
-  if (lower.includes('new') || lower.includes('brand new')) return 'new';
-  if (lower.includes('like new') || lower.includes('open box')) return 'like_new';
-  if (lower.includes('very good') || lower.includes('excellent')) return 'like_new';
-  if (lower.includes('good')) return 'good';
-  if (lower.includes('acceptable') || lower.includes('fair')) return 'fair';
-  if (lower.includes('for parts') || lower.includes('not working')) return 'for_parts';
-  return 'unknown';
-};
-
-const mapCurrency = (currency?: string): Currency => {
-  const upper = (currency || '').toUpperCase();
-  const valid: Currency[] = ['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'];
-  return valid.includes(upper as Currency) ? (upper as Currency) : 'USD';
-};
-
-export async function scrapeEbay(params: {
-  query: string;
-  maxItems?: number;
-  userId: string;
-  monitorId?: string;
-}): Promise<{ items: CreateDeal[] }> {
-  if (!SCRAPING_ENABLED) {
-    logger.warn('[eBay] Scraping disabled via SCRAPING_ENABLED');
-    return { items: [] };
-  }
-
-  const config = SCRAPING_ACTORS.ebay;
-
-  if (!config.enabled) {
-    logger.warn('[eBay] Actor disabled via config');
-    return { items: [] };
-  }
-
-  const items = await runApifyActor<EbayApifyItem>({
-    actorId: config.actorId,
-    input: {
-      search: params.query,
-      maxItems: params.maxItems ?? config.defaultMaxItems,
-    },
-    timeout: config.timeoutSecs,
-  });
-
-  const now = new Date();
-  const normalized: CreateDeal[] = items.map((item) => {
-    const sourceId =
-      item.itemId ??
-      item.epid ??
-      String(item.url ?? item.itemUrl ?? '').split('/').pop() ??
-      crypto
-        .createHash('sha256')
-        .update(item.url ?? item.title ?? Math.random().toString())
-        .digest('hex');
-=======
   image?: string;
   images?: string[];
   sellerName?: string;
@@ -171,10 +82,10 @@ export class EbayScraper {
             deals.push(deal);
           }
         } catch (error) {
-          logger.warn('[eBay] Failed to map item', {
+          logger.warn('[eBay] Failed to map item', ({
             error: error instanceof Error ? error.message : String(error),
             item: JSON.stringify(item).substring(0, 100),
-          });
+          } as any));
         }
       }
 
@@ -184,9 +95,9 @@ export class EbayScraper {
         deals,
       };
     } catch (error) {
-      logger.error('[eBay] Scrape failed', {
+      logger.error('[eBay] Scrape failed', ({
         error: error instanceof Error ? error.message : String(error),
-      });
+      } as any));
       throw error;
     }
   }
@@ -242,47 +153,10 @@ export class EbayScraper {
     else if (conditionStr.includes('like new')) condition = 'like_new';
     else if (conditionStr.includes('good')) condition = 'good';
     else if (conditionStr.includes('fair')) condition = 'fair';
->>>>>>> main
 
     return {
       source: 'ebay',
       sourceId,
-<<<<<<< HEAD
-      sourceUrl: item.url ?? item.itemUrl ?? '',
-      title: item.title ?? 'Untitled listing',
-      description: item.description ?? '',
-      category: item.category ?? item.categoryPath ?? 'general',
-      condition: mapEbayCondition(item.condition ?? item.conditionDescription),
-      listPrice:
-        typeof item.price === 'number'
-          ? item.price
-          : parseFloat(String(item.price ?? '0')),
-      currency: mapCurrency(item.currency),
-      shippingCost: 0, // eBay shipping varies, default to 0
-      location: item.location ?? item.itemLocation,
-      sellerName: item.seller?.username ?? item.sellerUsername ?? 'Unknown Seller',
-      sellerRating: item.seller?.feedbackPercentage
-        ? item.seller.feedbackPercentage / 20
-        : undefined,
-      sellerReviews: item.seller?.feedbackScore,
-      images: item.images ?? (item.image ? [item.image] : []),
-      thumbnailUrl: item.image ?? item.images?.[0],
-      status: 'active',
-      firstSeenAt: now,
-      lastSeenAt: now,
-      scrapedAt: now,
-      monitorId: params.monitorId ?? '',
-      userId: params.userId,
-    };
-  });
-
-  logger.info('[eBay] Scrape completed', {
-    query: params.query,
-    items: normalized.length,
-  });
-
-  return { items: normalized };
-=======
       sourceUrl,
       title: TitleParser.clean(title),
       category: 'general',
@@ -299,7 +173,8 @@ export class EbayScraper {
       scrapedAt: new Date(),
       firstSeenAt: new Date(),
       lastSeenAt: new Date(),
+      shippingCost: 0,
     };
   }
->>>>>>> main
 }
+

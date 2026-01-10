@@ -14,76 +14,6 @@
 
 import { logger } from '@repo/logger';
 
-<<<<<<< HEAD
-export type Marketplace = 'amazon' | 'facebook' | 'ebay' | 'vinted' | 'gumtree' | 'craigslist';
-
-export const SCRAPING_ENABLED = process.env.SCRAPING_ENABLED !== 'false';
-
-interface ActorConfig {
-  actorId: string;
-  enabled: boolean;
-  defaultMaxItems: number;
-  timeoutSecs: number;
-}
-
-export const SCRAPING_ACTORS: Record<Marketplace, ActorConfig> = {
-  amazon: {
-    actorId: process.env.APIFY_ACTOR_AMAZON || 'apify/amazon-scraper',
-    enabled: true,
-    defaultMaxItems: 50,
-    timeoutSecs: 120,
-  },
-  facebook: {
-    actorId: process.env.APIFY_ACTOR_FACEBOOK || 'apify/facebook-marketplace-scraper',
-    enabled: true,
-    defaultMaxItems: 50,
-    timeoutSecs: 120,
-  },
-  ebay: {
-    actorId: process.env.APIFY_ACTOR_EBAY || 'mfr355/ebay-scraper',
-    enabled: true,
-    defaultMaxItems: 50,
-    timeoutSecs: 120,
-  },
-  vinted: {
-    actorId: process.env.APIFY_ACTOR_VINTED || 'kliment/vinted-scraper',
-    enabled: true,
-    defaultMaxItems: 50,
-    timeoutSecs: 120,
-  },
-  gumtree: {
-    actorId: process.env.APIFY_ACTOR_GUMTREE || 'apify/gumtree-scraper',
-    enabled: true,
-    defaultMaxItems: 50,
-    timeoutSecs: 120,
-  },
-  craigslist: {
-    actorId: process.env.APIFY_ACTOR_CRAIGSLIST || 'apify/craigslist-scraper',
-    enabled: true,
-    defaultMaxItems: 50,
-    timeoutSecs: 120,
-  },
-};
-
-/**
- * Validate scraping configuration on startup
- */
-export function validateScrapingConfig(): void {
-  if (!SCRAPING_ENABLED) {
-    logger.warn('[Config] Scraping is globally disabled via SCRAPING_ENABLED');
-    return;
-  }
-
-  const enabledMarketplaces = Object.entries(SCRAPING_ACTORS)
-    .filter(([_, config]) => config.enabled)
-    .map(([marketplace]) => marketplace);
-
-  logger.info('[Config] Scraping configuration loaded', {
-    enabled: SCRAPING_ENABLED,
-    marketplaces: enabledMarketplaces,
-  });
-}
-=======
 // Apify Configuration
 export const APIFY_TOKEN = process.env.APIFY_TOKEN;
 export const APIFY_TIMEOUT_SECS_DEFAULT = parseInt(
@@ -108,6 +38,16 @@ export const APIFY_ACTOR_VINTED = process.env.APIFY_ACTOR_VINTED || 'apify/vinte
 export const APIFY_ACTOR_CRAIGSLIST =
   process.env.APIFY_ACTOR_CRAIGSLIST || 'apify/craigslist-scraper';
 
+// Backwards-compatible map used by older scrapers
+export const SCRAPING_ACTORS = {
+  amazon: { actorId: APIFY_ACTOR_AMAZON, enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+  ebay: { actorId: APIFY_ACTOR_EBAY, enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+  facebook: { actorId: APIFY_ACTOR_FACEBOOK, enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+  vinted: { actorId: APIFY_ACTOR_VINTED, enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+  gumtree: { actorId: process.env.APIFY_ACTOR_GUMTREE || 'apify/gumtree-scraper', enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+  craigslist: { actorId: APIFY_ACTOR_CRAIGSLIST, enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+};
+
 // Scraping Safety Configuration
 export const SCRAPING_ENABLED = process.env.SCRAPING_ENABLED !== 'false';
 export const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -127,7 +67,7 @@ export function validateScrapingConfig(): void {
     const error = new Error(
       '[Config] APIFY_TOKEN is required but not set. Cannot initialize scraping services.'
     );
-    logger.error('[Config] Missing APIFY_TOKEN', { error });
+    logger.error('[Config] Missing APIFY_TOKEN', error as any);
     throw error;
   }
 
@@ -185,4 +125,4 @@ export function getConfigSummary() {
     },
   };
 }
->>>>>>> main
+

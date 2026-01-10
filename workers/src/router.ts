@@ -1,20 +1,10 @@
-<<<<<<< HEAD
 import { JobPayload, SearchCriteria, CreateDeal } from '@repo/types';
-import { scrapeAmazon } from './scrapers/amazon';
-import { scrapeEbay } from './scrapers/ebay.scraper';
-import { scrapeFacebook } from './scrapers/facebook.scraper';
-import { scrapeVinted } from './scrapers/vinted.scraper';
-import { scrapeGumtree } from './scrapers/gumtree.scraper';
-import { scrapeCraigslist } from './scrapers/craigslist';
-=======
-import { JobPayload, SearchCriteria } from '@repo/types';
 import { ScrapeResult, ScrapeOptions } from './scrapers/base.scraper';
 import { CraigslistScraper } from './scrapers/craigslist.scraper';
 import { EbayScraper } from './scrapers/ebay.scraper';
 import { AmazonScraper } from './scrapers/amazon.scraper';
 import { FacebookScraper } from './scrapers/facebook.scraper';
 import { VintedScraper } from './scrapers/vinted/vinted.scraper';
->>>>>>> main
 import { StatusService } from './services/status.service';
 import { SCRAPING_ENABLED } from './config/scraping.config';
 import { logger } from '@repo/logger';
@@ -134,37 +124,31 @@ async function runScrape(
   userId: string,
   monitorId?: string
 ): Promise<CreateDeal[]> {
-  const params = { query, userId, monitorId };
+  const criteria: SearchCriteria = { keywords: query.split(/[\s,]+/).filter(Boolean) };
+  const options = { jobId: 'router', userId, monitorId } as any;
 
-  switch (source) {
-    case 'amazon':
-      return (await scrapeAmazon(params)).items;
-    case 'ebay':
-      return (await scrapeEbay(params)).items;
-    case 'facebook':
-      return (await scrapeFacebook(params)).items;
-    case 'vinted':
-      return (await scrapeVinted(params)).items;
-    case 'gumtree':
-      return (await scrapeGumtree(params)).items;
-    case 'craigslist':
-      return (await scrapeCraigslist(params)).items;
-    default:
-      throw new Error(`Unsupported source: ${source}`);
-  }
+  // Instances mirror what the JobRouter constructor creates
+  const instances: Record<string, any> = {
+    amazon: new AmazonScraper(),
+    ebay: new EbayScraper(),
+    facebook: new FacebookScraper(),
+    vinted: new VintedScraper(),
+    craigslist: new CraigslistScraper(),
+  };
+
+  const scraper = instances[source];
+  if (!scraper) throw new Error(`Unsupported source: ${source}`);
+
+  const result = await scraper.search(criteria, options);
+  return result.deals;
 }
 
 export class JobRouter {
-<<<<<<< HEAD
-=======
   private scrapers: Record<string, Scraper>;
->>>>>>> main
   private statusService: StatusService;
 
   constructor() {
     this.statusService = new StatusService();
-<<<<<<< HEAD
-=======
     // All scrapers now use Apify actors instead of browser automation
     this.scrapers = {
       craigslist: new CraigslistScraper(),
@@ -173,7 +157,6 @@ export class JobRouter {
       facebook: new FacebookScraper(),
       vinted: new VintedScraper(),
     };
->>>>>>> main
   }
 
   async route(payload: JobPayload) {

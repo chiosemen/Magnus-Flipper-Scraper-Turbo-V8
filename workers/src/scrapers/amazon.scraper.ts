@@ -82,10 +82,10 @@ export class AmazonScraper {
             deals.push(deal);
           }
         } catch (error) {
-          logger.warn('[Amazon] Failed to map item', {
+          logger.warn('[Amazon] Failed to map item', ({
             error: error instanceof Error ? error.message : String(error),
             item: JSON.stringify(item).substring(0, 100),
-          });
+          } as any));
         }
       }
 
@@ -95,9 +95,9 @@ export class AmazonScraper {
         deals,
       };
     } catch (error) {
-      logger.error('[Amazon] Scrape failed', {
+      logger.error('[Amazon] Scrape failed', ({
         error: error instanceof Error ? error.message : String(error),
-      });
+      } as any));
       throw error;
     }
   }
@@ -166,6 +166,7 @@ export class AmazonScraper {
       monitorId: options.monitorId || '',
       userId: options.userId,
       scrapedAt: new Date(),
+      shippingCost: 0,
       firstSeenAt: new Date(),
       lastSeenAt: new Date(),
     };

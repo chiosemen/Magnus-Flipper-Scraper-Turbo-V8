@@ -83,10 +83,10 @@ export class VintedScraper {
             deals.push(deal);
           }
         } catch (error) {
-          logger.warn('[Vinted] Failed to map item', {
+          logger.warn('[Vinted] Failed to map item', ({
             error: error instanceof Error ? error.message : String(error),
-            item: JSON.stringify(item).substring(0, 100),
-          });
+            item: JSON.stringify(item).substring(0, 120),
+          } as any));
         }
       }
 
@@ -96,9 +96,9 @@ export class VintedScraper {
         deals,
       };
     } catch (error) {
-      logger.error('[Vinted] Scrape failed', {
+      logger.error('[Vinted] Scrape failed', ({
         error: error instanceof Error ? error.message : String(error),
-      });
+      } as any));
       throw error;
     }
   }
@@ -177,6 +177,7 @@ export class VintedScraper {
       scrapedAt: new Date(),
       firstSeenAt: new Date(),
       lastSeenAt: new Date(),
+      shippingCost: 0,
     };
   }
 }
