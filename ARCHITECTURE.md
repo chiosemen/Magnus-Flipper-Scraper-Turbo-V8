@@ -46,12 +46,26 @@ We are using the **"T3-Enterprise"** inspired stack, optimized for scraping heav
 | **Validation** | **Zod** | Runtime schema validation (shared with Frontend). |
 | **Auth** | **Firebase Admin** | Verifies tokens sent from the client. |
 
-### 🤖 `apps/worker` (Scraper Engine)
+### 🤖 `apps/worker` (Scraper Engine) - **APIFY-FIRST ARCHITECTURE**
 | Category | Tool | Why? |
 | :--- | :--- | :--- |
-| **Core** | **Playwright** | The gold standard for headless browser automation. |
-| **Framework** | **Crawlee** | Wraps Playwright to handle queues, proxies, and retries automatically. |
-| **Stealth** | **Fingerprint Suite** | Advanced canvas/audio fingerprint spoofing. |
+| **Execution** | **Apify Platform** | ⚠️ **CHANGED FROM PLAYWRIGHT** - All scraping delegated to Apify actors. Zero browser processes in Cloud Run. |
+| **Client** | **apify-client** | Official Apify SDK for actor execution. |
+| **Architecture** | **Pure Functions** | ⚠️ **CHANGED FROM CLASSES** - Functional scrapers (no classes, no state). |
+| **Normalization** | **Marketplace-Specific Mappers** | Separate normalizers map raw Apify output to CreateDeal schema. |
+
+**❌ REMOVED (Browser Era):**
+- Playwright (headless browser automation)
+- Crawlee (browser queue management)
+- Fingerprint Suite (canvas/audio spoofing)
+- Browser Service, Proxy Service, Antibot Service
+- BaseScraper class hierarchy
+
+**✅ NEW (Apify-First):**
+- Single execution surface: `runApifyActor<T>()`
+- Functional scrapers: SearchCriteria → Apify input
+- Separate normalizers: Apify output → CreateDeal
+- No browser code in workers
 
 ### 💾 Data & Infrastructure
 | Category | Tool | Why? |
@@ -189,3 +203,258 @@ We use **GitHub Actions** driven by Turborepo's `affected` command.
 *   **Integration (Vitest):** Used in `apps/api` to test endpoints against a Dockerized Postgres.
 *   **E2E (Playwright):** Used in `apps/web` to test the full user flow (Login -> Submit Job -> View Result).
 *   **Load (k6):** Used to stress test the API Gateway and Worker scaling limits.
+
+---
+
+## 8. 🔄 APIFY-FIRST ARCHITECTURE (V2.0 - Current)
+
+**Last Updated**: 2026-01-10
+**Migration**: Complete (Browser era deleted)
+**Status**: Production Ready
+
+### 🎯 Architecture Philosophy
+
+**Zero-Browser Execution Model**: All marketplace scraping is delegated to Apify infrastructure. Our workers orchestrate Apify actors, normalize outputs, and manage business logic. No headless browsers run in Cloud Run.
+
+### 🏗️ Workers Architecture
+
+#### Functional Scraper Pattern
+
+**Old (Class-Based - DELETED):**
+```typescript
+export class AmazonScraper extends BaseScraper {
+  private browserService: BrowserService;
+  constructor() { this.browserService = new BrowserService(); }
+  async search(criteria) { /* browser automation */ }
+}
+```
+
+**New (Functional - CURRENT):**
+```typescript
+export async function scrapeAmazon(
+  criteria: SearchCriteria
+): Promise<unknown> {
+  return await runApifyActor({
+    actorId: APIFY_ACTORS.AMAZON,
+    input: {
+      searchTerms: criteria.keywords.join(' '),
+      maxItems: 50,
+    },
+  });
+}
+```
+
+**Key Improvements:**
+- ✅ Pure functions (deterministic input → output)
+- ✅ No classes, constructors, or instance state
+- ✅ Single responsibility (map criteria to actor input)
+- ✅ Returns raw Apify output (normalization happens separately)
+- ✅ Easy to test (no mocking required)
+
+#### Normalizer Pattern
+
+Marketplace-specific normalizers map raw Apify output to our `CreateDeal` schema:
+
+```typescript
+export function normalizeAmazonOutput(
+  rawItems: AmazonApifyItem[],
+  options: { userId: string; monitorId?: string }
+): CreateDeal[] {
+  return rawItems.map(item => ({
+    source: 'amazon',
+    sourceId: item.asin || generateDeterministicId(item),
+    sourceUrl: item.productUrl,
+    title: item.title,
+    listPrice: parseFloat(item.price),
+    currency: 'USD',
+    // Timestamp normalization (Date | string | number → Date)
+    firstSeenAt: new Date(),
+    lastSeenAt: new Date(),
+    scrapedAt: new Date(),
+    // User context
+    userId: options.userId,
+    monitorId: options.monitorId,
+  }));
+}
+```
+
+**Why Separate Normalizers?**
+1. **Separation of Concerns** - Scrapers don't need to know CreateDeal schema
+2. **Marketplace Flexibility** - Each marketplace has unique output format
+3. **Schema Evolution** - Change CreateDeal without touching scrapers
+4. **Type Safety** - Explicit mapping catches schema drift
+
+#### Router (Functional Dispatch)
+
+```typescript
+export async function runScrape(payload: JobPayload): Promise<ScrapeResult> {
+  // Simple switch/case (no class registry)
+  switch (payload.source) {
+    case 'amazon': {
+      const raw = await scrapeAmazon(payload.params.criteria);
+      const deals = normalizeAmazonOutput(raw, {
+        userId: payload.meta.userId,
+        monitorId: payload.params.monitorId,
+      });
+      return { dealsFound: deals.length, dealsNew: deals.length, deals };
+    }
+    // ... other marketplaces
+    default:
+      throw new Error(`Unknown source: ${payload.source}`);
+  }
+}
+```
+
+**No Classes, No Registry:**
+- Direct function invocation
+- Easy to trace execution path
+- No dependency injection complexity
+
+### 📊 Schema Reconciliation
+
+#### Problem: Type Boundaries
+
+**API Schema** (flexible input):
+```typescript
+export const TimestampSchema = z.union([z.date(), z.string(), z.number()]);
+export type Timestamp = z.infer<typeof TimestampSchema>;
+```
+
+**Database Schema** (strict storage):
+```typescript
+export const deals = pgTable('deals', {
+  firstSeenAt: timestamp('first_seen_at').defaultNow(), // Date | null
+});
+```
+
+**Solution: Normalize at Storage Boundary**
+
+```typescript
+await db.insert(schema.deals).values({
+  ...deal,
+  // Explicit timestamp normalization
+  firstSeenAt: deal.firstSeenAt ? new Date(deal.firstSeenAt) : new Date(),
+  lastSeenAt: deal.lastSeenAt ? new Date(deal.lastSeenAt) : new Date(),
+  scrapedAt: deal.scrapedAt ? new Date(deal.scrapedAt) : new Date(),
+});
+```
+
+**Why This Design:**
+- API accepts flexible formats (ISO strings, Unix timestamps, Date objects)
+- Database enforces strict Date types (data integrity)
+- Normalization at storage layer maintains separation of concerns
+
+### 🗑️ Deleted Components (Browser Era)
+
+**Files Removed:**
+- `workers/src/scrapers/base.scraper.ts` - Abstract class hierarchy
+- `workers/src/services/browser.service.ts` - Playwright wrapper
+- `workers/src/services/proxy.service.ts` - Proxy rotation
+- `workers/src/services/antibot.service.ts` - Fingerprint injection
+- `workers/src/scrapers/vinted/*` - jsdom DOM parsing
+
+**Dependencies Removed:**
+- `playwright` - Headless browser automation
+- `fingerprint-generator` - Browser fingerprinting
+- `fingerprint-injector` - Fingerprint injection
+
+**Why Deletion Was Necessary:**
+1. **Cost** - Browsers in Cloud Run consume memory/CPU
+2. **Reliability** - Browser-based scraping is fragile (timeouts, captcas)
+3. **Maintenance** - Antibot measures require constant updates
+4. **Architectural Clarity** - Mixing execution models creates confusion
+
+### 🎯 Guarantees
+
+**✅ What This Architecture Guarantees:**
+1. **No Browser Processes** - Zero Playwright, jsdom, or DOM references
+2. **Type Safety** - All workspace boundaries explicitly typed
+3. **Functional Purity** - Scrapers are pure functions
+4. **Single Execution Surface** - All scraping through `runApifyActor()`
+5. **Explicit Schema Reconciliation** - All type mismatches resolved at boundaries
+6. **Cost Visibility** - Apify usage tracked per marketplace
+
+**❌ What This Architecture Prevents:**
+1. **TS6059 Errors** - Strict package boundaries enforced
+2. **DOM Leakage** - No browser types in workers
+3. **Class Sprawl** - No inheritance hierarchies
+4. **Hidden Dependencies** - All imports explicit and typed
+5. **Runtime Surprises** - Timestamps normalized, coordinates flattened
+
+### 🌍 Environment Configuration
+
+**Required:**
+```bash
+APIFY_TOKEN=<your-apify-token>  # REQUIRED for all scraping
+DATABASE_URL=<postgres-url>
+FIREBASE_PROJECT_ID=<project-id>
+REDIS_URL=<redis-url>
+SHARED_SECRET=<api-worker-auth>
+```
+
+**Optional (Apify Configuration):**
+```bash
+# Actor Overrides (defaults to apify/* actors)
+APIFY_ACTOR_AMAZON=apify/amazon-scraper
+APIFY_ACTOR_EBAY=apify/ebay-scraper
+APIFY_ACTOR_FACEBOOK=apify/facebook-marketplace-scraper
+APIFY_ACTOR_VINTED=apify/vinted-scraper
+APIFY_ACTOR_CRAIGSLIST=apify/craigslist-scraper
+
+# Execution Limits
+APIFY_TIMEOUT_SECS_DEFAULT=120
+APIFY_MEMORY_MBYTES_DEFAULT=2048
+APIFY_MAX_ITEMS_DEFAULT=50
+```
+
+### 📦 Directory Structure (Workers)
+
+```text
+workers/
+├── src/
+│   ├── lib/
+│   │   ├── apify.ts              # Apify client wrapper (single execution surface)
+│   │   ├── db.ts                 # Database connection
+│   │   └── ...
+│   ├── scrapers/
+│   │   ├── amazon.ts             # Pure function: SearchCriteria → Apify input
+│   │   ├── ebay.ts
+│   │   ├── facebook.ts
+│   │   ├── vinted.ts
+│   │   └── craigslist.ts
+│   ├── normalize/
+│   │   ├── amazon.normalize.ts   # Raw Apify → CreateDeal
+│   │   ├── ebay.normalize.ts
+│   │   └── ...
+│   ├── services/
+│   │   ├── storage.service.ts    # Deal persistence + deduplication
+│   │   └── ...
+│   ├── router.ts                 # Functional dispatch (switch/case)
+│   └── index.ts                  # Hono server + job webhook
+```
+
+### 🚀 Deployment Checklist
+
+**Pre-Deployment:**
+- [ ] Run `pnpm typecheck` (must pass)
+- [ ] Verify `APIFY_TOKEN` in Cloud Run environment
+- [ ] Ensure no Playwright in `package.json`
+- [ ] Confirm scrapers are pure functions (no classes)
+- [ ] Check normalizers handle all marketplace formats
+
+**Post-Deployment:**
+- [ ] Monitor Apify usage dashboard
+- [ ] Verify scraping jobs complete successfully
+- [ ] Check database for duplicates (dedup should work)
+- [ ] Review logs for `[Apify]` prefixed messages
+
+### 📚 Further Reading
+
+- **Cherry-Pick Analysis**: See `APIFY_CHERRY_PICK_ANALYSIS.md` on branch `claude/extract-cherry-pick-shas-BjjnY` for detailed commit classification and migration strategy
+- **TypeScript Config**: `packages/config/typescript/worker.json` - strict mode, no DOM types
+- **Schema Reference**: `packages/database/src/schema/deals.ts` - database schema
+- **Type Definitions**: `packages/types/src/deals.ts` - CreateDeal schema
+
+---
+
+**This architecture is production-ready and designed for scale.**
