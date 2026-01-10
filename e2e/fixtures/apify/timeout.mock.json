@@ -1,0 +1,16 @@
+{
+  "actorRunId": "mock-run-timeout-001",
+  "datasetId": null,
+  "status": "TIMEOUT",
+  "error": {
+    "type": "ACTOR_TIMEOUT",
+    "message": "Actor run timed out after 120 seconds",
+    "code": "TIMEOUT"
+  },
+  "items": [],
+  "stats": {
+    "totalItems": 0,
+    "runtime": 120,
+    "memoryUsage": 2048
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "id": "evt_test_subscription_created_001",
+  "object": "event",
+  "api_version": "2023-10-16",
+  "created": 1704902400,
+  "type": "customer.subscription.created",
+  "data": {
+    "object": {
+      "id": "sub_test_001",
+      "object": "subscription",
+      "customer": "cus_test_001",
+      "status": "active",
+      "current_period_start": 1704902400,
+      "current_period_end": 1707580800,
+      "items": {
+        "data": [
+          {
+            "id": "si_test_001",
+            "object": "subscription_item",
+            "price": {
+              "id": "price_test_pro_monthly",
+              "object": "price",
+              "active": true,
+              "currency": "usd",
+              "product": "prod_test_pro",
+              "recurring": {
+                "interval": "month",
+                "interval_count": 1
+              },
+              "unit_amount": 2900,
+              "metadata": {
+                "tier": "pro"
+              }
+            },
+            "quantity": 1
+          }
+        ]
+      },
+      "metadata": {
+        "userId": "user_test_001",
+        "tier": "pro"
+      },
+      "plan": {
+        "id": "price_test_pro_monthly",
+        "object": "plan",
+        "active": true,
+        "amount": 2900,
+        "currency": "usd",
+        "interval": "month",
+        "product": "prod_test_pro"
+      }
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": "req_test_002",
+    "idempotency_key": "idempotency_002"
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "actorRunId": "mock-run-facebook-001",
+  "datasetId": "mock-dataset-facebook-001",
+  "status": "SUCCEEDED",
+  "items": [
+    {
+      "title": "iPhone 13 Pro 128GB Unlocked",
+      "price": 450,
+      "currency": "USD",
+      "url": "https://www.facebook.com/marketplace/item/mock-001",
+      "location": "San Francisco, CA",
+      "seller": "John Doe",
+      "description": "Excellent condition iPhone 13 Pro. No scratches. Includes original box and charger.",
+      "images": [
+        "https://example.com/image1.jpg",
+        "https://example.com/image2.jpg"
+      ],
+      "postedAt": "2026-01-09T10:30:00Z",
+      "condition": "Used - Like New",
+      "category": "Electronics"
+    },
+    {
+      "title": "iPhone 13 256GB Blue",
+      "price": 380,
+      "currency": "USD",
+      "url": "https://www.facebook.com/marketplace/item/mock-002",
+      "location": "Oakland, CA",
+      "seller": "Jane Smith",
+      "description": "iPhone 13 in great condition. Battery health 95%.",
+      "images": [
+        "https://example.com/image3.jpg"
+      ],
+      "postedAt": "2026-01-09T08:15:00Z",
+      "condition": "Used - Good",
+      "category": "Electronics"
+    },
+    {
+      "title": "iPhone 13 Mini 64GB Red",
+      "price": 320,
+      "currency": "USD",
+      "url": "https://www.facebook.com/marketplace/item/mock-003",
+      "location": "San Jose, CA",
+      "seller": "Mike Johnson",
+      "description": "Compact iPhone 13 Mini. Perfect for small hands.",
+      "images": [
+        "https://example.com/image4.jpg",
+        "https://example.com/image5.jpg"
+      ],
+      "postedAt": "2026-01-08T14:20:00Z",
+      "condition": "Used - Good",
+      "category": "Electronics"
+    },
+    {
+      "title": "iPhone 13 128GB Black - Cracked Screen",
+      "price": 200,
+      "currency": "USD",
+      "url": "https://www.facebook.com/marketplace/item/mock-004",
+      "location": "Berkeley, CA",
+      "seller": "Sarah Lee",
+      "description": "iPhone 13 with cracked screen. Everything else works perfectly.",
+      "images": [
+        "https://example.com/image6.jpg"
+      ],
+      "postedAt": "2026-01-08T11:00:00Z",
+      "condition": "Used - Fair",
+      "category": "Electronics"
+    },
+    {
+      "title": "iPhone 13 Pro Max 512GB Gold",
+      "price": 650,
+      "currency": "USD",
+      "url": "https://www.facebook.com/marketplace/item/mock-005",
+      "location": "Palo Alto, CA",
+      "seller": "David Chen",
+      "description": "Top-tier iPhone 13 Pro Max. Like new condition. Still under AppleCare.",
+      "images": [
+        "https://example.com/image7.jpg",
+        "https://example.com/image8.jpg",
+        "https://example.com/image9.jpg"
+      ],
+      "postedAt": "2026-01-07T16:45:00Z",
+      "condition": "Used - Like New",
+      "category": "Electronics"
+    },
+    {
+      "title": "iPhone 13 128GB White",
+      "price": 400,
+      "currency": "USD",
+      "url": "https://www.facebook.com/marketplace/item/mock-006",
+      "location": "Fremont, CA",
+      "seller": "Lisa Wang",
+      "description": "Clean iPhone 13. No issues. Battery 92%.",
+      "images": [
+        "https://example.com/image10.jpg"
+      ],
+      "postedAt": "2026-01-07T09:30:00Z",
+      "condition": "Used - Good",
+      "category": "Electronics"
+    },
+    {
+      "title": "iPhone 13 64GB Pink",
+      "price": 350,
+      "currency": "USD",
+      "url": "https://www.facebook.com/marketplace/item/mock-007",
+      "location": "Hayward, CA",
+      "seller": "Robert Kim",
+      "description": "Pink iPhone 13. Minimal wear. Comes with case.",
+      "images": [
+        "https://example.com/image11.jpg",
+        "https://example.com/image12.jpg"
+      ],
+      "postedAt": "2026-01-06T13:00:00Z",
+      "condition": "Used - Good",
+      "category": "Electronics"
+    },
+    {
+      "title": "iPhone 13 Pro 256GB Graphite",
+      "price": 500,
+      "currency": "USD",
+      "url": "https://www.facebook.com/marketplace/item/mock-008",
+      "location": "Mountain View, CA",
+      "seller": "Emily Brown",
+      "description": "iPhone 13 Pro in graphite. Pro camera system. Battery 98%.",
+      "images": [
+        "https://example.com/image13.jpg"
+      ],
+      "postedAt": "2026-01-06T10:15:00Z",
+      "condition": "Used - Like New",
+      "category": "Electronics"
+    },
+    {
+      "title": "iPhone 13 128GB Blue - Carrier Locked",
+      "price": 280,
+      "currency": "USD",
+      "url": "https://www.facebook.com/marketplace/item/mock-009",
+      "location": "Sunnyvale, CA",
+      "seller": "James Wilson",
+      "description": "iPhone 13 locked to AT&T. Great condition otherwise.",
+      "images": [
+        "https://example.com/image14.jpg"
+      ],
+      "postedAt": "2026-01-05T15:30:00Z",
+      "condition": "Used - Good",
+      "category": "Electronics"
+    },
+    {
+      "title": "iPhone 13 Mini 128GB Midnight",
+      "price": 340,
+      "currency": "USD",
+      "url": "https://www.facebook.com/marketplace/item/mock-010",
+      "location": "Santa Clara, CA",
+      "seller": "Amanda Taylor",
+      "description": "Compact iPhone 13 Mini. Perfect working order.",
+      "images": [
+        "https://example.com/image15.jpg",
+        "https://example.com/image16.jpg"
+      ],
+      "postedAt": "2026-01-05T08:00:00Z",
+      "condition": "Used - Good",
+      "category": "Electronics"
+    }
+  ],
+  "stats": {
+    "totalItems": 10,
+    "runtime": 45,
+    "memoryUsage": 1024
+  }
+}
