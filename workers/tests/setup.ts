@@ -5,6 +5,7 @@ import { __resetObservabilityGateCacheForTests } from '../src/services/observabi
 
 process.env.NODE_ENV = 'test';
 process.env.WORKER_SHARED_SECRET = process.env.WORKER_SHARED_SECRET || 'test-worker-secret';
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test';
 
 vi.mock('../src/lib/firestore', () => ({
   firestore: getTestFirestore(),
