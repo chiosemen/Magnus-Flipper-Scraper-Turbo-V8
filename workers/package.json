@@ -23,7 +23,8 @@
     "cheerio": "^1.0.0-rc.12",
     "@repo/types": "workspace:*",
     "@repo/database": "workspace:*",
-    "@repo/logger": "workspace:*"
+    "@repo/logger": "workspace:*",
+    "@repo/telemetry": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.11.0",

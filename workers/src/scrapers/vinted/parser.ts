@@ -1,3 +1,4 @@
+// @ts-ignore - jsdom provides DOM types at runtime
 import { JSDOM } from 'jsdom';
 import { CreateDeal } from '@repo/types';
 import { PriceParser } from '../../parsers/price.parser';
@@ -6,14 +7,14 @@ import type { VintedClassification } from './types';
 
 const LISTING_SELECTOR = 'article[data-testid="listing-card"], .vintage-listing-card';
 
-const buildDealFromNode = (node: Element): CreateDeal | null => {
+const buildDealFromNode = (node: any): CreateDeal | null => {
   const idAttr = node.getAttribute('data-item-id') || node.getAttribute('data-listing-id');
-  const linkEl = node.querySelector<HTMLAnchorElement>('a[href*="vinted.com/item/"], a[href*="/item/"]');
+  const linkEl = node.querySelector('a[href*="vinted.com/item/"], a[href*="/item/"]');
   const link = linkEl?.href;
   const title = (node.querySelector('[data-testid="listing-card-title"], h3, .title')?.textContent || '').trim();
   const priceText = (node.querySelector('[data-testid="listing-card-price"], .price')?.textContent || '').trim();
   const priceValue = PriceParser.parse(priceText);
-  const image = (node.querySelector('img') as HTMLImageElement | null)?.src;
+  const image = node.querySelector('img')?.src;
   const location = node.querySelector('[data-testid="listing-card-location"], .location')?.textContent?.trim();
   const createdAt = node.querySelector('time')?.getAttribute('datetime');
 
@@ -30,6 +31,7 @@ const buildDealFromNode = (node: Element): CreateDeal | null => {
     condition: TitleParser.extractCondition(title),
     listPrice: priceValue.value,
     currency: priceValue.currency as any,
+    shippingCost: 0,
     images: image ? [image] : [],
     thumbnailUrl: image || undefined,
     status: 'active',
@@ -37,12 +39,9 @@ const buildDealFromNode = (node: Element): CreateDeal | null => {
     location,
     monitorId: '',
     userId: '',
-    dealScore: 70,
     scrapedAt: new Date(),
-    firstSeenAt: new Date(),
-    lastSeenAt: new Date(),
-    createdAt: createdAt ? new Date(createdAt) : new Date(),
-    updatedAt: new Date(),
+    firstSeenAt: createdAt ? new Date(createdAt) : new Date(),
+    lastSeenAt: new Date()
   };
 };
 

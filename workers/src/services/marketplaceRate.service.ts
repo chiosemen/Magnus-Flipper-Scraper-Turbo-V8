@@ -49,13 +49,14 @@ const loadConfig = async (source: string): Promise<MarketplaceRateConfig> => {
     return buildSafeConfig();
   }
 
+  // isValidConfig ensures target is defined and has required properties
   return {
-    enabled: target.enabled,
-    maxConcurrency: Number(target.maxConcurrency),
-    jobsPerMinute: Number(target.jobsPerMinute),
-    errorThreshold: Number(target.errorThreshold),
-    cooldownSeconds: Number(target.cooldownSeconds),
-    cooldownUntil: target.cooldownUntil ? new Date(target.cooldownUntil) : null,
+    enabled: target!.enabled,
+    maxConcurrency: Number(target!.maxConcurrency),
+    jobsPerMinute: Number(target!.jobsPerMinute),
+    errorThreshold: Number(target!.errorThreshold),
+    cooldownSeconds: Number(target!.cooldownSeconds),
+    cooldownUntil: target!.cooldownUntil ? new Date(target!.cooldownUntil) : null,
   };
 };
 

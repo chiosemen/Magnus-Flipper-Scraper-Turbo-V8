@@ -67,18 +67,16 @@ export class CraigslistScraper extends BaseScraper {
            condition: TitleParser.extractCondition(title),
            listPrice: price,
            currency: currency as any,
+           shippingCost: 0,
            images: imgUrl ? [imgUrl] : [],
            thumbnailUrl: imgUrl,
            status: 'active',
            sellerName: 'Private Seller',
            monitorId: '', // Filled by orchestrator
            userId: '', // Filled by orchestrator
-           dealScore: 50,
            scrapedAt: new Date(),
            firstSeenAt: new Date(),
-           lastSeenAt: new Date(),
-           createdAt: new Date(),
-           updatedAt: new Date()
+           lastSeenAt: new Date()
          });
        } catch (e) {
          // Skip malformed item

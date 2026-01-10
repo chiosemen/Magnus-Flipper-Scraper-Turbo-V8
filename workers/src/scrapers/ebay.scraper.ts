@@ -64,18 +64,16 @@ export class EbayScraper extends BaseScraper {
            condition: TitleParser.extractCondition(title),
            listPrice: price,
            currency: currency as any,
+           shippingCost: 0,
            images: imgUrl ? [imgUrl] : [],
            thumbnailUrl: imgUrl,
            status: 'active',
            sellerName: sellerName,
            monitorId: '',
            userId: '',
-           dealScore: 50,
            scrapedAt: new Date(),
            firstSeenAt: new Date(),
-           lastSeenAt: new Date(),
-           createdAt: new Date(),
-           updatedAt: new Date()
+           lastSeenAt: new Date()
         });
 
       } catch (e) {

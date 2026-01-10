@@ -24,7 +24,8 @@ export class AntibotService {
       return;
     }
     const fingerprint = this.fingerprintGenerator.getFingerprint();
-    await this.fingerprintInjector.attachFingerprintToPlaywright(page, fingerprint);
+    // fingerprint-injector requires BrowserContext, not Page
+    await this.fingerprintInjector.attachFingerprintToPlaywright(page.context(), fingerprint);
   }
 
   async simulateHumanBehavior(page: Page) {
@@ -38,8 +39,9 @@ export class AntibotService {
       { steps: 5 }
     );
     
-    // Random scroll
+    // Random scroll - runs in browser context where window exists
     await page.evaluate(() => {
+      // @ts-expect-error - window exists in browser context
       window.scrollBy(0, window.innerHeight / 2);
     });
     

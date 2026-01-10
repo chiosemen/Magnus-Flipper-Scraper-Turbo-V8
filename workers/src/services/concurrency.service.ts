@@ -41,7 +41,7 @@ export class EntitlementsMissingError extends Error {
   }
 }
 
-const hasValidEntitlements = (entitlements: EntitlementsSnapshot | null | undefined) =>
+const hasValidEntitlements = (entitlements: EntitlementsSnapshot | null | undefined): entitlements is EntitlementsSnapshot =>
   !!entitlements
   && typeof entitlements.tierKey === 'string'
   && Number.isFinite(entitlements.maxConcurrencyUser)

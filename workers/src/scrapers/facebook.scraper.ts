@@ -181,6 +181,7 @@ export class FacebookScraper extends BaseScraper {
           condition: TitleParser.extractCondition(titleLine),
           listPrice: price,
           currency: currency as any,
+          shippingCost: 0,
           images: imageUrl ? [imageUrl] : [],
           thumbnailUrl: imageUrl || undefined,
           status: 'active',
@@ -188,12 +189,9 @@ export class FacebookScraper extends BaseScraper {
           location: locationLine || undefined,
           monitorId: '',
           userId: '',
-          dealScore: 50,
           scrapedAt: new Date(),
           firstSeenAt: new Date(),
-          lastSeenAt: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          lastSeenAt: new Date()
         });
       } catch (error) {
         logger.warn('Failed to parse Facebook listing', { error: (error as Error).message });

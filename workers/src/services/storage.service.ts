@@ -35,9 +35,12 @@ export class StorageService {
             });
         }
       } else {
-        // Create new
+        // Create new - normalize timestamps to Date objects for DB
         const [newDeal] = await db.insert(schema.deals).values({
           ...deal,
+          firstSeenAt: new Date(deal.firstSeenAt),
+          lastSeenAt: new Date(deal.lastSeenAt),
+          scrapedAt: new Date(deal.scrapedAt),
           userId,
           status: 'active',
           createdAt: new Date(),

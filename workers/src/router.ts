@@ -1,5 +1,5 @@
-import { JobPayload, ScrapeResult } from '@repo/types';
-import { BaseScraper } from './scrapers/base.scraper';
+import { JobPayload } from '@repo/types';
+import { BaseScraper, ScrapeResult } from './scrapers/base.scraper';
 import { CraigslistScraper } from './scrapers/craigslist.scraper';
 import { EbayScraper } from './scrapers/ebay.scraper';
 import { AmazonScraper } from './scrapers/amazon.scraper';
