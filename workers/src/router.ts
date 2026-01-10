@@ -1,5 +1,5 @@
-import { JobPayload, ScrapeResult } from '@repo/types';
-import { BaseScraper } from './scrapers/base.scraper';
+import { JobPayload, SearchCriteria } from '@repo/types';
+import { ScrapeResult, ScrapeOptions } from './scrapers/base.scraper';
 import { CraigslistScraper } from './scrapers/craigslist.scraper';
 import { EbayScraper } from './scrapers/ebay.scraper';
 import { AmazonScraper } from './scrapers/amazon.scraper';
@@ -9,6 +9,12 @@ import { StatusService } from './services/status.service';
 import { logger } from '@repo/logger';
 import { db, schema } from './lib/db';
 import { and, eq, sql } from 'drizzle-orm';
+
+// Interface for scrapers (now using Apify actors instead of browser automation)
+interface Scraper {
+  search(criteria: SearchCriteria, options: ScrapeOptions): Promise<ScrapeResult>;
+  buildSearchUrl(criteria: SearchCriteria): string;
+}
 
 const TIER_ERROR_CODES = {
   MONITOR_LIMIT: 'TIER_MONITOR_LIMIT',
@@ -108,18 +114,18 @@ const enforceTierLimits = async (payload: JobPayload) => {
 };
 
 export class JobRouter {
-  private scrapers: Record<string, BaseScraper>;
+  private scrapers: Record<string, Scraper>;
   private statusService: StatusService;
 
   constructor() {
     this.statusService = new StatusService();
+    // All scrapers now use Apify actors instead of browser automation
     this.scrapers = {
       craigslist: new CraigslistScraper(),
       ebay: new EbayScraper(),
       amazon: new AmazonScraper(),
       facebook: new FacebookScraper(),
       vinted: new VintedScraper(),
-      // generic: new GenericScraper(),
     };
   }
 

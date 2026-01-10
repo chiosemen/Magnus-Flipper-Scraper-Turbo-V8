@@ -10,6 +10,10 @@ import { assertDemoModeAllowsExecution, getDemoRateOverrides, DemoModeError, DEM
 import { assertConcurrencyWithinLimits, ConcurrencyBackoffError } from './services/concurrency.service';
 import { DeltaCheckService } from './services/deltaCheck.service';
 import { StatusService } from './services/status.service';
+import { validateScrapingConfig } from './config/scraping.config';
+
+// Validate scraping configuration on startup (fail-fast if APIFY_TOKEN missing)
+validateScrapingConfig();
 
 const app = new Hono();
 const router = new JobRouter();
