@@ -527,6 +527,12 @@ importers:
       drizzle-orm:
         specifier: workspace:*
         version: link:../packages/vendor-drizzle
+      fingerprint-generator:
+        specifier: ^2.1.43
+        version: 2.1.79
+      fingerprint-injector:
+        specifier: ^2.1.43
+        version: 2.1.79(playwright@1.57.0)
       firebase-admin:
         specifier: ^12.1.0
         version: 12.7.0(encoding@0.1.13)
@@ -536,6 +542,9 @@ importers:
       ioredis:
         specifier: ^5.4.1
         version: 5.9.1
+      playwright:
+        specifier: ^1.44.0
+        version: 1.57.0
       postgres:
         specifier: ^3.4.4
         version: 3.4.8
@@ -1966,7 +1975,7 @@ packages:
 
   '@expo/bunyan@4.0.1':
     resolution: {integrity: sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg==}
-    engines: {node: '>=0.10.0'}
+    engines: {'0': node >=0.10.0}
 
   '@expo/cli@0.22.27':
     resolution: {integrity: sha512-MZ3s68+OFQZWljAiCdwL+dL+xZudpkmhq0A2Qb4+p6MNp386WJyAYineXtiLJVww/8ohIfUxOL10vnaPdDVl4w==}
