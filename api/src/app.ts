@@ -9,9 +9,15 @@ import routes from './routes';
 
 const app = new Hono();
 
+// Validate required environment variables
+const corsOrigin = process.env.CORS_ORIGIN;
+if (!corsOrigin) {
+  throw new Error('CORS_ORIGIN environment variable is required');
+}
+
 // Global Middleware
 app.use('*', cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: corsOrigin,
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
