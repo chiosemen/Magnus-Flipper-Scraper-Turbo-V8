@@ -3,6 +3,7 @@ import { scrapeAmazon } from './scrapers/amazon';
 import { scrapeEbay } from './scrapers/ebay.scraper';
 import { scrapeFacebook } from './scrapers/facebook.scraper';
 import { scrapeVinted } from './scrapers/vinted.scraper';
+import { scrapeGumtree } from './scrapers/gumtree.scraper';
 import { scrapeCraigslist } from './scrapers/craigslist';
 import { StatusService } from './services/status.service';
 import { SCRAPING_ENABLED } from './config/scraping.config';
@@ -128,6 +129,8 @@ async function runScrape(
       return (await scrapeFacebook(params)).items;
     case 'vinted':
       return (await scrapeVinted(params)).items;
+    case 'gumtree':
+      return (await scrapeGumtree(params)).items;
     case 'craigslist':
       return (await scrapeCraigslist(params)).items;
     default:
