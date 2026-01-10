@@ -7,6 +7,40 @@ on:
     branches: [ main ]
 
 jobs:
+  browser-automation-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check for browser automation code in production
+      run: |
+        echo "Checking for forbidden browser automation patterns in workers/src/..."
+
+        # Check workers/src/ for browser automation patterns
+        if grep -rn -E '(playwright|puppeteer|chromium|browser\.service|BaseScraper|page\.goto|new Browser\(\))' \
+          workers/src/ \
+          --exclude-dir=node_modules \
+          --exclude-dir=dist \
+          --exclude-dir=build \
+          --exclude='*.test.ts' \
+          --exclude='*.test.js' \
+          --exclude='*.spec.ts' \
+          --exclude='*.spec.js' \
+          --exclude='*.md'; then
+          echo ""
+          echo "❌ ERROR: Browser automation code detected in production paths!"
+          echo "The following patterns are forbidden in workers/src/:"
+          echo "  - playwright"
+          echo "  - puppeteer"
+          echo "  - chromium"
+          echo "  - browser.service"
+          echo "  - BaseScraper"
+          echo "  - page.goto"
+          echo "  - new Browser()"
+          exit 1
+        else
+          echo "✓ No browser automation code detected in workers/src/"
+        fi
+
   unit-tests:
     runs-on: ubuntu-latest
     steps:
