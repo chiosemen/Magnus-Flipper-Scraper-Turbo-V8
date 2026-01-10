@@ -12,16 +12,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Clean install
-        run: npm ci
-      - name: API unit tests
-        run: npm run test:api:unit
-      - name: Worker unit tests
-        run: npm run test:workers:unit
+          cache: 'pnpm'
+
+      - name: Enable corepack & prepare pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies (pnpm)
+        run: pnpm install --frozen-lockfile
+      - name: Run unit tests
+        run: pnpm -w -r run test:unit
       - name: Require coverage output
         run: test -f coverage/lcov.info
       - name: Upload coverage to Codecov
@@ -58,12 +63,19 @@ jobs:
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Clean install
-        run: npm ci
+          cache: 'pnpm'
+
+      - name: Enable corepack & prepare pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies (pnpm)
+        run: pnpm install --frozen-lockfile
       - name: Install Playwright Chromium
         run: npx playwright install chromium --with-deps
       - name: Wait for Postgres
@@ -76,7 +88,7 @@ jobs:
           done
           exit 1
       - name: Integration tests
-        run: npm run test:integration
+        run: pnpm run test:integration
       - name: Upload integration test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -91,12 +103,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Clean install
-        run: npm ci
+          cache: 'pnpm'
+
+      - name: Enable corepack & prepare pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies (pnpm)
+        run: pnpm install --frozen-lockfile
       - name: Start test environment
         run: docker compose -f docker-compose.test.yml up -d
       - name: Wait for services
@@ -109,7 +128,7 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
       - name: E2E tests
-        run: npm run test:e2e
+        run: pnpm run test:e2e
       - name: Upload E2E artifacts
         if: always()
         uses: actions/upload-artifact@v4
