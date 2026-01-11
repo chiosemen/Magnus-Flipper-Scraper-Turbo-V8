@@ -29,18 +29,30 @@ vi.mock('@repo/logger', () => ({
 
 // Mock ApifyClient
 vi.mock('apify-client', () => {
+  const mockActor = vi.fn();
   const mockCall = vi.fn();
   const mockListItems = vi.fn();
-
+  
   return {
-    ApifyClient: vi.fn().mockImplementation(() => ({
-      actor: vi.fn().mockReturnValue({
-        call: mockCall,
-      }),
-      dataset: vi.fn().mockReturnValue({
-        listItems: mockListItems,
-      }),
-    })),
+    ApifyClient: vi.fn().mockImplementation(() => {
+      // Reset mocks on each instantiation for test isolation
+      mockActor.mockClear();
+      mockCall.mockClear();
+      mockListItems.mockClear();
+      
+      return {
+        actor: mockActor.mockReturnValue({
+          call: mockCall,
+        }),
+        dataset: vi.fn().mockReturnValue({
+          listItems: mockListItems,
+        }),
+        // Expose mocks for test inspection
+        _mockCall: mockCall,
+        _mockListItems: mockListItems,
+        _mockActor: mockActor,
+      };
+    }),
   };
 });
 
@@ -51,14 +63,18 @@ describe('runApifyActor', () => {
   let mockClient: any;
   let mockCall: any;
   let mockListItems: any;
+  let mockActor: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     // Create a fresh mock client instance
     mockClient = new ApifyClient({ token: 'test-token' });
-    mockCall = mockClient.actor().call;
-    mockListItems = mockClient.dataset().listItems;
+    
+    // Get references to the mocks attached to the client
+    mockCall = mockClient._mockCall;
+    mockListItems = mockClient._mockListItems;
+    mockActor = mockClient._mockActor;
   });
 
   it('should successfully run actor and return items', async () => {

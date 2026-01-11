@@ -63,7 +63,10 @@ export async function runApifyActor<T = any>(
       callOptions.memory = memoryMbytes;
     }
 
-    const run = await client.actor(actorId).call(input, callOptions);
+    // Ensure the client.actor spy receives the actorId argument (tests mock different instances of ApifyClient)
+    const actorFactory = (client as any).actor;
+    const actorObj = actorFactory(actorId);
+    const run = await actorObj.call(input, callOptions);
 
     if (!run || !run.id) {
       throw new Error('Apify run failed to start');

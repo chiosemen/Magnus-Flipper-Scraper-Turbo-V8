@@ -5,6 +5,10 @@ export function classifyVintedHtml(html: string) {
     return { state: 'BLOCKED' as const, reason: 'no_results' };
   }
 
+  if (s.includes('no listings match') || s.includes('no results found')) {
+    return { state: 'BLOCKED' as const, reason: 'no_results' };
+  }
+
   if (s.includes('access denied') || s.includes('blocked') || s.includes('anti-bot') || s.includes('access denied: blocked')) {
     return { state: 'BLOCKED' as const, reason: 'blocked_html' };
   }

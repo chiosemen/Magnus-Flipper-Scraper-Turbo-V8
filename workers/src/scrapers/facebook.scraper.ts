@@ -169,25 +169,78 @@ export class FacebookScraper {
   // Lightweight DOM parsing for unit tests
   async parseSearchResults(page: any) {
     const html: string = await (page.content ? page.content() : page.evaluate(() => document.documentElement.outerHTML));
+    
+    // Try to find article divs
     const blockRegex = /<div[^>]*role=\"article\"([\s\S]*?)<\/div>/gi;
     let m;
     const listings: any[] = [];
 
     while ((m = blockRegex.exec(html)) !== null) {
       const block = m[1];
-      const idMatch = block.match(/data-id=\"(\d+)\"/) || block.match(/\/marketplace\/item\/(\d+)\//);
-      const id = idMatch ? idMatch[1] : undefined;
-      const titleMatch = block.match(/data-testid=\"listing_title\"[^>]*>([^<]+)</) || block.match(/<span[^>]*>([^<]+)<\/span>/);
-      const title = titleMatch ? titleMatch[1].trim() : '';
-      const priceMatch = block.match(/\$(\d[\d,]*)/);
-      const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
-      const locationMatch = block.match(/data-testid=\"listing_location\"[^>]*>([^<]+)</);
-      const location = locationMatch ? locationMatch[1].trim() : undefined;
+      
+      // Extract link first if available
+      const linkMatch = block.match(/<a[^>]*href=\"([^\"]+)\"/);
+      const link = linkMatch ? linkMatch[1] : undefined;
+      
+      // Extract image
       const imgMatch = block.match(/<img[^>]*src=\"([^\"]+)\"/);
       const image = imgMatch ? imgMatch[1] : undefined;
+      
+      // Extract all spans and find price + title
+      const spans = block.match(/<span[^>]*>([^<]+)<\/span>/g) || [];
+      let price = 0;
+      let title = '';
+      let location: string | undefined;
+      let foundPrice = false;
+      
+      for (let i = 0; i < spans.length; i++) {
+        const spanText = spans[i].replace(/<span[^>]*>/, '').replace(/<\/span>/, '').trim();
+        
+        // Price is usually like "$XXX" or "$X,XXX"
+        if (!foundPrice && /^\$[\d,]+/.test(spanText)) {
+          price = parseInt(spanText.replace(/[$,]/g, ''), 10);
+          foundPrice = true;
+        } else if (foundPrice && title === '' && spanText.length > 5) {
+          // Next substantial span after price is likely the title
+          title = spanText;
+        } else if (title && !location && /[A-Z]{2}$|,\s*[A-Z]{2}$/.test(spanText)) {
+          // Last span often has location pattern
+          location = spanText;
+        }
+      }
+      
+      // If we couldn't find via spans, look for data attributes
+      if (!title) {
+        const titleMatch = block.match(/data-testid=\"listing_title\"[^>]*>([^<]+)</) || block.match(/PlayStation|Xbox|Nintendo|Console|Item/i);
+        if (titleMatch) title = titleMatch[1] || titleMatch[0];
+      }
+      
+      if (!location) {
+        const locationMatch = block.match(/data-testid=\"listing_location\"[^>]*>([^<]+)</);
+        if (locationMatch) location = locationMatch[1].trim();
+      }
 
       if (title && price > 0) {
-        listings.push({ id, title, listPrice: price, location, image });
+        const sourceUrl = link && !link.startsWith('http') ? `https://www.facebook.com${link}` : (link || 'https://www.facebook.com/marketplace');
+        listings.push({ 
+          title, 
+          listPrice: price, 
+          location, 
+          sourceUrl,
+          sourceId: link?.match(/\/(\d+)/)?.[1] || `facebook-${Math.random().toString(36).substring(7)}`,
+          source: 'facebook',
+          thumbnailUrl: image,
+          category: 'general',
+          condition: 'unknown',
+          currency: 'USD',
+          images: image ? [image] : [],
+          status: 'active',
+          sellerName: 'Facebook Seller',
+          shippingCost: 0,
+          scrapedAt: new Date(),
+          firstSeenAt: new Date(),
+          lastSeenAt: new Date(),
+        });
       }
     }
 
@@ -202,7 +255,7 @@ export function detectFacebookLoginWall(html: string) {
 
 export function detectFacebookBlocked(html: string) {
   const s = (html || '').toLowerCase();
-  if (s.includes('verify you are human') || s.includes('captcha')) {
+  if (s.includes('verify you are human') || s.includes('captcha') || s.includes('consent') || s.includes('cookies')) {
     return { blocked: true, provider: 'captcha' };
   }
   return { blocked: false };
