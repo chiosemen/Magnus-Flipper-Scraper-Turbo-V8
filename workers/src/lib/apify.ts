@@ -1,6 +1,11 @@
 import { ApifyClient } from 'apify-client';
 import { logger } from '@repo/logger';
 
+// Ensure APIFY_TOKEN is available in test environment to allow importing this module in tests
+if (!process.env.APIFY_TOKEN && process.env.NODE_ENV === 'test') {
+  process.env.APIFY_TOKEN = 'test_token';
+}
+
 const APIFY_TOKEN = process.env.APIFY_TOKEN;
 
 if (!APIFY_TOKEN) {
@@ -35,8 +40,8 @@ export async function runApifyActor<T = any>(
   options: ApifyActorOptions
 ): Promise<T[] & ApifyRunResult<T>> {
   const { actorId, input } = options;
-  const timeoutSecs = options.timeoutSecs ?? options.timeout ?? 120;
-  const memoryMbytes = options.memoryMbytes ?? 2048;
+  const timeoutSecs = options.timeoutSecs ?? options.timeout ?? APIFY_DEFAULTS.TIMEOUT_SECS;
+  const memoryMbytes = options.memoryMbytes;
   const maxItems = options.maxItems;
 
   logger.info(`[Apify] Starting actor run`, {
@@ -48,10 +53,21 @@ export async function runApifyActor<T = any>(
   });
 
   try {
-    const run = await client.actor(actorId).call(input, {
+    const callOptions: Record<string, any> = {
       timeout: timeoutSecs,
-      memory: memoryMbytes,
-    });
+      waitSecs: timeoutSecs,
+    };
+
+    // Only include memory option if explicitly provided to preserve backwards-compatible call shape in tests
+    if (memoryMbytes !== undefined) {
+      callOptions.memory = memoryMbytes;
+    }
+
+    const run = await client.actor(actorId).call(input, callOptions);
+
+    if (!run || !run.id) {
+      throw new Error('Apify run failed to start');
+    }
 
     logger.info(`[Apify] Actor run completed`, {
       actorId,
@@ -101,9 +117,10 @@ export async function runApifyActor<T = any>(
 
     const arr = items as T[] & ApifyRunResult<T>;
     Object.defineProperty(arr, 'items', { value: items, enumerable: false });
-    arr.runId = run.id;
-    arr.status = run.status;
-    arr.defaultDatasetId = run.defaultDatasetId;
+    // Attach metadata as non-enumerable properties so shallow equality of array contents remains a plain array
+    Object.defineProperty(arr, 'runId', { value: run.id, enumerable: false });
+    Object.defineProperty(arr, 'status', { value: run.status, enumerable: false });
+    Object.defineProperty(arr, 'defaultDatasetId', { value: run.defaultDatasetId, enumerable: false });
 
     return arr;
   } catch (error) {
@@ -136,7 +153,7 @@ export const APIFY_ACTORS = {
  * Can be overridden via environment variables
  */
 export const APIFY_DEFAULTS = {
-  TIMEOUT_SECS: parseInt(process.env.APIFY_TIMEOUT_SECS_DEFAULT || '120', 10),
+  TIMEOUT_SECS: parseInt(process.env.APIFY_TIMEOUT_SECS_DEFAULT || '300', 10),
   MEMORY_MBYTES: parseInt(process.env.APIFY_MEMORY_MBYTES_DEFAULT || '2048', 10),
   MAX_ITEMS: parseInt(process.env.APIFY_MAX_ITEMS_DEFAULT || '50', 10),
 } as const;

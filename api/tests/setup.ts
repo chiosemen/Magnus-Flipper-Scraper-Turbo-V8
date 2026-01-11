@@ -16,6 +16,8 @@ process.env.STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || 'http://localho
 process.env.STRIPE_PORTAL_RETURN_URL = process.env.STRIPE_PORTAL_RETURN_URL || 'http://localhost:5173/billing';
 process.env.WORKER_SHARED_SECRET = process.env.WORKER_SHARED_SECRET || 'test-worker-secret';
 process.env.GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || 'test-project';
+// Ensure a DATABASE_URL is present so db imports during tests don't throw when not set in CI
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/magnus_flipper_test';
 process.env.GCP_LOCATION = process.env.GCP_LOCATION || 'us-central1';
 process.env.GCP_QUEUE_NAME = process.env.GCP_QUEUE_NAME || 'scraper-queue';
 process.env.WORKER_SERVICE_URL = process.env.WORKER_SERVICE_URL || 'http://localhost:8081';

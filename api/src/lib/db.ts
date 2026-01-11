@@ -3,6 +3,11 @@ import postgres from 'postgres';
 import * as schema from '@repo/database';
 import { logger } from '@repo/logger';
 
+// In tests, ensure a DATABASE_URL is set so importing this module doesn't throw
+if (!process.env.DATABASE_URL && process.env.NODE_ENV === 'test') {
+  process.env.DATABASE_URL = 'postgres://postgres:postgres@localhost:5432/magnus_flipper_test';
+}
+
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
