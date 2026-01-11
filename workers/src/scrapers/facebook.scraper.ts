@@ -165,4 +165,53 @@ export class FacebookScraper {
       shippingCost: 0,
     };
   }
+
+  // Lightweight DOM parsing for unit tests
+  async parseSearchResults(page: any) {
+    const html: string = await (page.content ? page.content() : page.evaluate(() => document.documentElement.outerHTML));
+    const blockRegex = /<div[^>]*role=\"article\"([\s\S]*?)<\/div>/gi;
+    let m;
+    const listings: any[] = [];
+
+    while ((m = blockRegex.exec(html)) !== null) {
+      const block = m[1];
+      const idMatch = block.match(/data-id=\"(\d+)\"/) || block.match(/\/marketplace\/item\/(\d+)\//);
+      const id = idMatch ? idMatch[1] : undefined;
+      const titleMatch = block.match(/data-testid=\"listing_title\"[^>]*>([^<]+)</) || block.match(/<span[^>]*>([^<]+)<\/span>/);
+      const title = titleMatch ? titleMatch[1].trim() : '';
+      const priceMatch = block.match(/\$(\d[\d,]*)/);
+      const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
+      const locationMatch = block.match(/data-testid=\"listing_location\"[^>]*>([^<]+)</);
+      const location = locationMatch ? locationMatch[1].trim() : undefined;
+      const imgMatch = block.match(/<img[^>]*src=\"([^\"]+)\"/);
+      const image = imgMatch ? imgMatch[1] : undefined;
+
+      if (title && price > 0) {
+        listings.push({ id, title, listPrice: price, location, image });
+      }
+    }
+
+    return { listings };
+  }
+}
+
+export function detectFacebookLoginWall(html: string) {
+  const s = (html || '').toLowerCase();
+  return /log in to facebook|please log in|login to continue/.test(s);
+}
+
+export function detectFacebookBlocked(html: string) {
+  const s = (html || '').toLowerCase();
+  if (s.includes('verify you are human') || s.includes('captcha')) {
+    return { blocked: true, provider: 'captcha' };
+  }
+  return { blocked: false };
+}
+
+export function classifyFacebookHtml(html: string, count: number) {
+  if (detectFacebookLoginWall(html)) return 'login';
+  const b = detectFacebookBlocked(html);
+  if (b.blocked) return 'blocked';
+  if (count === 0 || /marketplacesearchresults/.test((html || '').toLowerCase()) === false) return 'empty';
+  return 'results';
 }

@@ -171,4 +171,28 @@ export class AmazonScraper {
       lastSeenAt: new Date(),
     };
   }
+
+  // Lightweight DOM parsing for unit tests
+  async parseSearchResults(page: any) {
+    const html: string = await (page.content ? page.content() : page.evaluate(() => document.documentElement.outerHTML));
+    const blockRegex = /<div[^>]*data-component-type=\"s-search-result\"([\s\S]*?)<\/div>/gi;
+    let m;
+    const listings: any[] = [];
+
+    while ((m = blockRegex.exec(html)) !== null) {
+      const block = m[1];
+      const titleMatch = block.match(/<span[^>]*class=\"a-size-medium[^\"]*\"[^>]*>([^<]+)<\/span>/) || block.match(/<span[^>]*>([^<]+)<\/span>/);
+      const title = titleMatch ? titleMatch[1].trim() : '';
+      const priceMatch = block.match(/\$(\d[\d,]*)/);
+      const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
+      const urlMatch = block.match(/href=\"([^\"]+)\"/);
+      const url = urlMatch ? urlMatch[1] : '';
+
+      if (title && price > 0) {
+        listings.push({ title, listPrice: price, url, source: 'amazon' });
+      }
+    }
+
+    return { listings };
+  }
 }
