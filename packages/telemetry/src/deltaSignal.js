@@ -1,21 +1,17 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.computeDeltaSignal = exports.hashListing = void 0;
-var normalizeHashes = function (input) {
+const normalizeHashes = (input) => {
     if (!Array.isArray(input))
         return [];
     return input
-        .filter(function (value) { return typeof value === 'string'; })
-        .map(function (value) { return value.trim(); });
+        .filter((value) => typeof value === 'string')
+        .map((value) => value.trim());
 };
-var hashListing = function (input) {
-    var normalizedTitle = input.title.trim().toLowerCase();
-    return "".concat(input.id, "::").concat(input.price, "::").concat(normalizedTitle);
+export const hashListing = (input) => {
+    const normalizedTitle = input.title.trim().toLowerCase();
+    return `${input.id}::${input.price}::${normalizedTitle}`;
 };
-exports.hashListing = hashListing;
-var computeDeltaSignal = function (input) {
-    var current = normalizeHashes(input.currentListingHashes);
-    var lastSeen = new Set(normalizeHashes(input.lastSeenListingHashes));
+export const computeDeltaSignal = (input) => {
+    const current = normalizeHashes(input.currentListingHashes);
+    const lastSeen = new Set(normalizeHashes(input.lastSeenListingHashes));
     if (!current.length) {
         return {
             changed: false,
@@ -24,19 +20,17 @@ var computeDeltaSignal = function (input) {
             lastSeenCount: lastSeen.size,
         };
     }
-    var newHashes = new Set();
-    for (var _i = 0, current_1 = current; _i < current_1.length; _i++) {
-        var hash = current_1[_i];
+    const newHashes = new Set();
+    for (const hash of current) {
         if (!lastSeen.has(hash)) {
             newHashes.add(hash);
         }
     }
-    var deltaCount = newHashes.size;
+    const deltaCount = newHashes.size;
     return {
         changed: deltaCount > 0,
-        deltaCount: deltaCount,
+        deltaCount,
         currentCount: current.length,
         lastSeenCount: lastSeen.size,
     };
 };
-exports.computeDeltaSignal = computeDeltaSignal;

@@ -4,12 +4,18 @@ set -euo pipefail
 echo "🔍 Preflight checks..."
 
 # Ensure clean git state
-if [[ -n "$(git status --porcelain)" ]]; then
+# By default ignore untracked files (build artifacts, generated .js) so they don't block deployment.
+# Set STRICT=1 in the environment to require zero untracked files as well.
+STATUS_CMD="git status --porcelain"
+if [[ "${STRICT:-0}" != "1" ]]; then
+  STATUS_CMD="$STATUS_CMD --untracked-files=no"
+fi
+if [[ -n "$(eval $STATUS_CMD)" ]]; then
   echo "❌ Working tree not clean. Commit or stash first."
   exit 1
 fi
 
-echo "✅ Git clean"
+echo "✅ Git clean (ignoring untracked files)"
 
 # Ensure on main
 BRANCH=$(git branch --show-current)
@@ -48,4 +54,3 @@ echo "➡️  If you use GitHub Actions, deployment starts now."
 #   --no-allow-unauthenticated
 
 echo "🎉 Deploy command finished"
-

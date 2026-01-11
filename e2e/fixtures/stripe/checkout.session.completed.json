@@ -1,0 +1,57 @@
+{
+  "id": "evt_test_checkout_completed_001",
+  "object": "event",
+  "api_version": "2023-10-16",
+  "created": 1704902400,
+  "type": "checkout.session.completed",
+  "data": {
+    "object": {
+      "id": "cs_test_001",
+      "object": "checkout.session",
+      "amount_total": 2900,
+      "currency": "usd",
+      "customer": "cus_test_001",
+      "customer_email": "test-user@magnusflipper.com",
+      "mode": "subscription",
+      "payment_status": "paid",
+      "status": "complete",
+      "subscription": "sub_test_001",
+      "success_url": "https://app.magnusflipper.com/success",
+      "cancel_url": "https://app.magnusflipper.com/pricing",
+      "metadata": {
+        "userId": "user_test_001",
+        "tier": "pro"
+      },
+      "line_items": {
+        "data": [
+          {
+            "id": "li_test_001",
+            "object": "item",
+            "amount_total": 2900,
+            "currency": "usd",
+            "description": "Pro Plan",
+            "price": {
+              "id": "price_test_pro_monthly",
+              "object": "price",
+              "active": true,
+              "currency": "usd",
+              "product": "prod_test_pro",
+              "recurring": {
+                "interval": "month",
+                "interval_count": 1
+              },
+              "unit_amount": 2900
+            },
+            "quantity": 1
+          }
+        ]
+      }
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": "req_test_001",
+    "idempotency_key": "idempotency_001"
+  }
+}

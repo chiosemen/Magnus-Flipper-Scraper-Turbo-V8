@@ -1,4 +1,4 @@
-import { JobPayload, SearchCriteria } from '@repo/types';
+import { JobPayload, SearchCriteria, CreateDeal } from '@repo/types';
 import { ScrapeResult, ScrapeOptions } from './scrapers/base.scraper';
 import { CraigslistScraper } from './scrapers/craigslist.scraper';
 import { EbayScraper } from './scrapers/ebay.scraper';
@@ -6,6 +6,7 @@ import { AmazonScraper } from './scrapers/amazon.scraper';
 import { FacebookScraper } from './scrapers/facebook.scraper';
 import { VintedScraper } from './scrapers/vinted/vinted.scraper';
 import { StatusService } from './services/status.service';
+import { SCRAPING_ENABLED } from './config/scraping.config';
 import { logger } from '@repo/logger';
 import { db, schema } from './lib/db';
 import { and, eq, sql } from 'drizzle-orm';
@@ -113,6 +114,35 @@ const enforceTierLimits = async (payload: JobPayload) => {
     .where(eq(schema.monitors.id, monitorId));
 };
 
+/**
+ * Pure function dispatch to Apify-first scrapers
+ * NO classes, NO inheritance, NO magic
+ */
+async function runScrape(
+  source: string,
+  query: string,
+  userId: string,
+  monitorId?: string
+): Promise<CreateDeal[]> {
+  const criteria: SearchCriteria = { keywords: query.split(/[\s,]+/).filter(Boolean) };
+  const options = { jobId: 'router', userId, monitorId } as any;
+
+  // Instances mirror what the JobRouter constructor creates
+  const instances: Record<string, any> = {
+    amazon: new AmazonScraper(),
+    ebay: new EbayScraper(),
+    facebook: new FacebookScraper(),
+    vinted: new VintedScraper(),
+    craigslist: new CraigslistScraper(),
+  };
+
+  const scraper = instances[source];
+  if (!scraper) throw new Error(`Unsupported source: ${source}`);
+
+  const result = await scraper.search(criteria, options);
+  return result.deals;
+}
+
 export class JobRouter {
   private scrapers: Record<string, Scraper>;
   private statusService: StatusService;
@@ -131,48 +161,69 @@ export class JobRouter {
 
   async route(payload: JobPayload) {
     const { jobId, type, source, params, meta } = payload;
-    const scraper = this.scrapers[source];
 
-    if (!scraper) {
-      throw new Error(`No scraper found for source: ${source}`);
+    // Global kill switch - blocks ALL scraping when disabled
+    if (!SCRAPING_ENABLED) {
+      logger.warn('[Router] Scraping globally disabled via SCRAPING_ENABLED', {
+        jobId,
+        source,
+        userId: meta.userId,
+      });
+      await this.statusService.updateStatus(jobId, 'completed', 100, {
+        dealsFound: 0,
+        dealsNew: 0,
+        message: 'Scraping disabled'
+      });
+      return { dealsFound: 0, dealsNew: 0, deals: [] };
     }
 
     await enforceTierLimits(payload);
     await this.statusService.updateStatus(jobId, 'running', 10, { startedAt: new Date() });
-    
-    try {
-      let result;
-      let criteria = params.criteria as any;
 
+    try {
+      let criteria = params.criteria as SearchCriteria;
+
+      // Fallback for legacy searchQuery format
       if (!criteria && typeof params.searchQuery === 'string') {
         const keywords = params.searchQuery
           .split(/[,\n]+/)
-          .map((value) => value.trim())
+          .map((value: string) => value.trim())
           .filter(Boolean);
         if (keywords.length > 0) {
           criteria = { keywords };
         }
       }
 
-      if (type === 'monitor_search' && criteria) {
-        result = await scraper.search(criteria, { 
-            jobId, 
-            userId: meta.userId,
-            monitorId: params.monitorId
-        });
-      } else if (type === 'single_url' && params.urls) {
-        // Not implemented in base yet, utilizing search as placeholder or generic
-        logger.warn('Single URL scrape not fully implemented in router, skipping');
-        result = { dealsFound: 0, dealsNew: 0, deals: [] };
+      if (!criteria) {
+        throw new Error('No search criteria provided');
+      }
+
+      let deals: CreateDeal[] = [];
+
+      if (type === 'monitor_search') {
+        // Execute Apify-first scrape
+        const query = criteria.keywords?.join(' ') || '';
+        deals = await runScrape(source, query, meta.userId, params.monitorId);
+
+        // Metadata already enriched by scrapers
+      } else if (type === 'single_url') {
+        logger.warn('Single URL scrape not implemented, requires URL-specific Apify actors');
+        deals = [];
       } else {
         throw new Error(`Unsupported job type: ${type}`);
       }
+
+      const result = {
+        dealsFound: deals.length,
+        dealsNew: deals.length, // TODO: Implement delta detection
+        deals,
+      };
 
       await this.statusService.updateStatus(jobId, 'completed', 100, {
         dealsFound: result.dealsFound,
         dealsNew: result.dealsNew
       });
-      
+
       return result;
 
     } catch (error) {

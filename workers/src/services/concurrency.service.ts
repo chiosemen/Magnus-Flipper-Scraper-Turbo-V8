@@ -80,7 +80,8 @@ export const assertConcurrencyWithinLimits = async (payload: JobPayload) => {
     throw new EntitlementsMissingError('Entitlements snapshot missing');
   }
 
-  const limits = resolveConcurrencySnapshot(entitlements);
+  // entitlements is guaranteed non-null here due to hasValidEntitlements check above
+  const limits = resolveConcurrencySnapshot(entitlements!);
   const runningJobs = await db.execute(sql`
     SELECT count(*) as count FROM ${schema.jobs}
     WHERE user_id = ${userId} AND status = 'running'

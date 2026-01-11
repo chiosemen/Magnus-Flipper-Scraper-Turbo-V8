@@ -15,6 +15,7 @@ export interface ApifyActorOptions {
   actorId: string;
   input: Record<string, any>;
   timeoutSecs?: number;
+  timeout?: number;
   memoryMbytes?: number;
   maxItems?: number;
 }
@@ -32,8 +33,11 @@ export interface ApifyRunResult<T> {
  */
 export async function runApifyActor<T = any>(
   options: ApifyActorOptions
-): Promise<ApifyRunResult<T>> {
-  const { actorId, input, timeoutSecs = 120, memoryMbytes = 2048, maxItems } = options;
+): Promise<T[] & ApifyRunResult<T>> {
+  const { actorId, input } = options;
+  const timeoutSecs = options.timeoutSecs ?? options.timeout ?? 120;
+  const memoryMbytes = options.memoryMbytes ?? 2048;
+  const maxItems = options.maxItems;
 
   logger.info(`[Apify] Starting actor run`, {
     actorId,
@@ -44,7 +48,6 @@ export async function runApifyActor<T = any>(
   });
 
   try {
-    // Start the actor run
     const run = await client.actor(actorId).call(input, {
       timeout: timeoutSecs,
       memory: memoryMbytes,
@@ -57,7 +60,6 @@ export async function runApifyActor<T = any>(
       defaultDatasetId: run.defaultDatasetId,
     });
 
-    // Validate run succeeded
     if (run.status !== 'SUCCEEDED') {
       throw new Error(
         `[Apify] Actor run failed with status: ${run.status}. Run ID: ${run.id}`
@@ -70,20 +72,14 @@ export async function runApifyActor<T = any>(
       );
     }
 
-    // Fetch dataset items with pagination
     const items: T[] = [];
     let offset = 0;
-    const limit = 100; // Fetch in chunks of 100
+    const limit = 100;
 
     while (true) {
-      const dataset = await client.dataset(run.defaultDatasetId).listItems({
-        offset,
-        limit,
-      });
+      const dataset = await client.dataset(run.defaultDatasetId).listItems({ offset, limit });
 
-      if (!dataset.items || dataset.items.length === 0) {
-        break; // No more items
-      }
+      if (!dataset.items || dataset.items.length === 0) break;
 
       items.push(...(dataset.items as T[]));
 
@@ -94,43 +90,24 @@ export async function runApifyActor<T = any>(
         totalFetched: items.length,
       });
 
-      // Check if we've reached maxItems limit
       if (maxItems && items.length >= maxItems) {
-        logger.info(`[Apify] Reached maxItems limit`, {
-          actorId,
-          runId: run.id,
-          maxItems,
-          totalFetched: items.length,
-        });
+        logger.info(`[Apify] Reached maxItems limit`, { actorId, runId: run.id, maxItems, totalFetched: items.length });
         break;
       }
 
-      // Check if we've fetched all items
-      if (dataset.items.length < limit) {
-        break; // Last page
-      }
-
+      if (dataset.items.length < limit) break;
       offset += limit;
     }
 
-    logger.info(`[Apify] Successfully fetched all items from dataset`, {
-      actorId,
-      runId: run.id,
-      totalItems: items.length,
-      datasetId: run.defaultDatasetId,
-    });
+    const arr = items as T[] & ApifyRunResult<T>;
+    Object.defineProperty(arr, 'items', { value: items, enumerable: false });
+    arr.runId = run.id;
+    arr.status = run.status;
+    arr.defaultDatasetId = run.defaultDatasetId;
 
-    return {
-      items: maxItems ? items.slice(0, maxItems) : items,
-      runId: run.id,
-      status: run.status,
-      defaultDatasetId: run.defaultDatasetId,
-    };
+    return arr;
   } catch (error) {
-    logger.error(`[Apify] Actor run failed`, {
-      actorId,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.error(`[Apify] Actor run failed for ${actorId}`, error as any);
     throw error;
   }
 }
@@ -140,11 +117,18 @@ export async function runApifyActor<T = any>(
  * These can be overridden via environment variables
  */
 export const APIFY_ACTORS = {
+  // Uppercase for enum-like usage
   AMAZON: process.env.APIFY_ACTOR_AMAZON || 'apify/amazon-scraper',
   EBAY: process.env.APIFY_ACTOR_EBAY || 'apify/ebay-scraper',
   FACEBOOK: process.env.APIFY_ACTOR_FACEBOOK || 'apify/facebook-marketplace-scraper',
   VINTED: process.env.APIFY_ACTOR_VINTED || 'apify/vinted-scraper',
   CRAIGSLIST: process.env.APIFY_ACTOR_CRAIGSLIST || 'apify/craigslist-scraper',
+  // Lowercase aliases for compatibility with older code
+  amazon: process.env.APIFY_ACTOR_AMAZON || 'apify/amazon-scraper',
+  ebay: process.env.APIFY_ACTOR_EBAY || 'apify/ebay-scraper',
+  facebook: process.env.APIFY_ACTOR_FACEBOOK || 'apify/facebook-marketplace-scraper',
+  vinted: process.env.APIFY_ACTOR_VINTED || 'apify/vinted-scraper',
+  craigslist: process.env.APIFY_ACTOR_CRAIGSLIST || 'apify/craigslist-scraper',
 } as const;
 
 /**

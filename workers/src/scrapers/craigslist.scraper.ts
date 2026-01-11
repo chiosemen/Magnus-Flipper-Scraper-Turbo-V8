@@ -86,10 +86,10 @@ export class CraigslistScraper {
             deals.push(deal);
           }
         } catch (error) {
-          logger.warn('[Craigslist] Failed to map item', {
+          logger.warn('[Craigslist] Failed to map item', ({
             error: error instanceof Error ? error.message : String(error),
             item: JSON.stringify(item).substring(0, 100),
-          });
+          } as any));
         }
       }
 
@@ -99,9 +99,9 @@ export class CraigslistScraper {
         deals,
       };
     } catch (error) {
-      logger.error('[Craigslist] Scrape failed', {
+      logger.error('[Craigslist] Scrape failed', ({
         error: error instanceof Error ? error.message : String(error),
-      });
+      } as any));
       throw error;
     }
   }
@@ -167,6 +167,7 @@ export class CraigslistScraper {
       scrapedAt: new Date(),
       firstSeenAt: new Date(),
       lastSeenAt: new Date(),
+      shippingCost: 0,
     };
   }
 }

@@ -82,10 +82,10 @@ export class EbayScraper {
             deals.push(deal);
           }
         } catch (error) {
-          logger.warn('[eBay] Failed to map item', {
+          logger.warn('[eBay] Failed to map item', ({
             error: error instanceof Error ? error.message : String(error),
             item: JSON.stringify(item).substring(0, 100),
-          });
+          } as any));
         }
       }
 
@@ -95,9 +95,9 @@ export class EbayScraper {
         deals,
       };
     } catch (error) {
-      logger.error('[eBay] Scrape failed', {
+      logger.error('[eBay] Scrape failed', ({
         error: error instanceof Error ? error.message : String(error),
-      });
+      } as any));
       throw error;
     }
   }
@@ -173,6 +173,8 @@ export class EbayScraper {
       scrapedAt: new Date(),
       firstSeenAt: new Date(),
       lastSeenAt: new Date(),
+      shippingCost: 0,
     };
   }
 }
+

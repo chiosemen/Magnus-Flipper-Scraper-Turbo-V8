@@ -7,6 +7,7 @@ export const DealSourceEnum = z.enum([
   'amazon',
   'facebook',
   'vinted',
+  'gumtree',
   'offerup',
   'mercari',
   'other'

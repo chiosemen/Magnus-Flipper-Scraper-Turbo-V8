@@ -1,0 +1,63 @@
+{
+  "id": "evt_test_subscription_deleted_001",
+  "object": "event",
+  "api_version": "2023-10-16",
+  "created": 1705075200,
+  "type": "customer.subscription.deleted",
+  "data": {
+    "object": {
+      "id": "sub_test_001",
+      "object": "subscription",
+      "customer": "cus_test_001",
+      "status": "canceled",
+      "canceled_at": 1705075200,
+      "ended_at": 1705075200,
+      "current_period_start": 1704902400,
+      "current_period_end": 1707580800,
+      "items": {
+        "data": [
+          {
+            "id": "si_test_001",
+            "object": "subscription_item",
+            "price": {
+              "id": "price_test_pro_monthly",
+              "object": "price",
+              "active": true,
+              "currency": "usd",
+              "product": "prod_test_pro",
+              "recurring": {
+                "interval": "month",
+                "interval_count": 1
+              },
+              "unit_amount": 2900,
+              "metadata": {
+                "tier": "pro"
+              }
+            },
+            "quantity": 1
+          }
+        ]
+      },
+      "metadata": {
+        "userId": "user_test_001",
+        "tier": "pro",
+        "cancellationReason": "customer_request"
+      },
+      "plan": {
+        "id": "price_test_pro_monthly",
+        "object": "plan",
+        "active": true,
+        "amount": 2900,
+        "currency": "usd",
+        "interval": "month",
+        "product": "prod_test_pro"
+      }
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": "req_test_004",
+    "idempotency_key": "idempotency_004"
+  }
+}

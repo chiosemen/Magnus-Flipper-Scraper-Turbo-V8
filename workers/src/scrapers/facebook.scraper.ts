@@ -31,11 +31,7 @@ export class FacebookScraper {
   }
 
   buildSearchUrl(criteria: SearchCriteria): string {
-    const params = new URLSearchParams();
-    params.append('query', criteria.keywords.join(' '));
-    if (criteria.minPrice) params.append('minPrice', criteria.minPrice.toString());
-    if (criteria.maxPrice) params.append('maxPrice', criteria.maxPrice.toString());
-    return `${this.baseUrl}/search/?${params.toString()}`;
+    return `${this.baseUrl}/search?query=${encodeURIComponent(criteria.keywords.join(' '))}`;
   }
 
   async search(criteria: SearchCriteria, options: ScrapeOptions): Promise<ScrapeResult> {
@@ -79,10 +75,10 @@ export class FacebookScraper {
             deals.push(deal);
           }
         } catch (error) {
-          logger.warn('[Facebook] Failed to map item', {
+          logger.warn('[Facebook] Failed to map item', ({
             error: error instanceof Error ? error.message : String(error),
             item: JSON.stringify(item).substring(0, 100),
-          });
+          } as any));
         }
       }
 
@@ -92,9 +88,9 @@ export class FacebookScraper {
         deals,
       };
     } catch (error) {
-      logger.error('[Facebook] Scrape failed', {
+      logger.error('[Facebook] Scrape failed', ({
         error: error instanceof Error ? error.message : String(error),
-      });
+      } as any));
       throw error;
     }
   }
@@ -166,6 +162,7 @@ export class FacebookScraper {
       scrapedAt: new Date(),
       firstSeenAt: new Date(),
       lastSeenAt: new Date(),
+      shippingCost: 0,
     };
   }
 }

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:unit": "sh -c 'if [ -d tests ]; then vitest run --config vitest.config.ts tests; else echo \"no web unit tests\"; fi'"
   },
   "dependencies": {
     "react": "^19.0.0",

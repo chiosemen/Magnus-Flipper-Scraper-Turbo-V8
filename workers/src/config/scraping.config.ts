@@ -1,8 +1,15 @@
 /**
+<<<<<<< HEAD
+ * Scraping Configuration - Apify Actor Registry
+ *
+ * Centralized configuration for all marketplace actors.
+ * Each marketplace has an actor ID, enabled flag, and default limits.
+=======
  * Scraping Configuration
  *
  * Central configuration for scraping behavior after Apify-first migration.
  * All production marketplace scraping uses Apify actors.
+>>>>>>> main
  */
 
 import { logger } from '@repo/logger';
@@ -31,6 +38,16 @@ export const APIFY_ACTOR_VINTED = process.env.APIFY_ACTOR_VINTED || 'apify/vinte
 export const APIFY_ACTOR_CRAIGSLIST =
   process.env.APIFY_ACTOR_CRAIGSLIST || 'apify/craigslist-scraper';
 
+// Backwards-compatible map used by older scrapers
+export const SCRAPING_ACTORS = {
+  amazon: { actorId: APIFY_ACTOR_AMAZON, enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+  ebay: { actorId: APIFY_ACTOR_EBAY, enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+  facebook: { actorId: APIFY_ACTOR_FACEBOOK, enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+  vinted: { actorId: APIFY_ACTOR_VINTED, enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+  gumtree: { actorId: process.env.APIFY_ACTOR_GUMTREE || 'apify/gumtree-scraper', enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+  craigslist: { actorId: APIFY_ACTOR_CRAIGSLIST, enabled: true, defaultMaxItems: APIFY_MAX_ITEMS_DEFAULT, timeoutSecs: APIFY_TIMEOUT_SECS_DEFAULT },
+};
+
 // Scraping Safety Configuration
 export const SCRAPING_ENABLED = process.env.SCRAPING_ENABLED !== 'false';
 export const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -50,7 +67,7 @@ export function validateScrapingConfig(): void {
     const error = new Error(
       '[Config] APIFY_TOKEN is required but not set. Cannot initialize scraping services.'
     );
-    logger.error('[Config] Missing APIFY_TOKEN', { error });
+    logger.error('[Config] Missing APIFY_TOKEN', error as any);
     throw error;
   }
 
@@ -108,3 +125,4 @@ export function getConfigSummary() {
     },
   };
 }
+
